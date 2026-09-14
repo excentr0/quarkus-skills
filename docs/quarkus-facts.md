@@ -243,7 +243,6 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   for may-be-missing properties.
 
 ## 16. RabbitMQ (quarkus-messaging-rabbitmq)
-
 - Extension: `io.quarkus:quarkus-messaging-rabbitmq` (preview status); connector value is exactly
   `smallrye-rabbitmq`. Companion guides: quarkus.io/guides/rabbitmq and quarkus.io/guides/rabbitmq-reference.
 - Programming model is standard Reactive Messaging: `@Incoming`/`@Outgoing`/`@Channel` + `Emitter` —
@@ -275,3 +274,70 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   `dead-letter-routing-key`, `dlx.declare`, `dead-letter-queue-type` [quorum, classic, stream].
 - `@Blocking` (`io.smallrye.reactive.messaging.annotations.Blocking`) runs a blocking consumer method on
   a worker thread. Health: per-channel `health-enabled` with `quarkus-smallrye-health`.
+
+## 17. OpenTelemetry (quarkus-opentelemetry) — verified 2026-09 against Quarkus 3.33 LTS + main
+- Extension: `io.quarkus:quarkus-opentelemetry`. **Traces are on by default** once the extension is
+  present (sampler `parentbased_always_on`, propagators `tracecontext,baggage`, OTLP export to
+  `http://localhost:4317`).
+- **Metrics are disabled by default** on 3.33 LTS ("tech preview") — enable explicitly with
+  `quarkus.otel.metrics.enabled=true`. On newer main the default flipped to true — writing it
+  explicitly is correct on both.
+- Version drift (verified on both branches): `quarkus.otel.exporter.otlp.protocol` defaults to
+  **`grpc`** (port 4317) on 3.33 LTS and to **`http/protobuf`** (port 4318) on newer main. Only
+  `grpc` and `http/protobuf` are supported; when writing an endpoint, always write the protocol with
+  the matching port. Per-signal endpoints: `quarkus.otel.exporter.otlp.{traces,metrics}.endpoint`.
+- Exporter defaults: endpoint `http://localhost:4317`, timeout `10s`, headers
+  `key1=value1,key2=value2`, compression unset (= none). Exporters are wired via CDI
+  (`quarkus.otel.traces.exporter` / `...metrics.exporter` default `cdi`); values `otlp`, `none`,
+  `logging` (needs `io.opentelemetry:opentelemetry-exporter-logging`).
+- Disable layers: `quarkus.otel.enabled=false` (build time, everything),
+  `quarkus.otel.exporter.otlp.enabled=false` (build time — telemetry still generated/propagated,
+  nothing sent), `quarkus.otel.sdk.disabled=true` (runtime), per-signal `quarkus.otel.traces.enabled`
+  / `quarkus.otel.metrics.enabled` (build time).
+- Resource attributes (automatic): `service.name` = `quarkus.application.name` (fallback artifactId),
+  `service.version` = artifact version, `host.name`, `telemetry.sdk.*`, `webengine.*`. Extra:
+  `quarkus.otel.resource.attributes=key1=val1,...`; `quarkus.otel.service.name` takes precedence.
+- Traces knobs: `quarkus.otel.traces.sampler` (`parentbased_always_on` default;
+  `always_on`, `always_off`, `traceidratio`, `parentbased_*`) + `quarkus.otel.traces.sampler-arg`
+  (default `1.0d`); `quarkus.otel.traces.suppress-non-application-uris=true` (default, hides `/q/*`),
+  `quarkus.otel.traces.suppress-application-uris`, `quarkus.otel.traces.include-static-resources`
+  (default `false`); BSP defaults: `schedule.delay=5s`, `max.queue.size=2048`,
+  `max.export.batch.size=512`, `export.timeout=30s`.
+- Metric interval: `quarkus.otel.metric.export.interval` default `60s`.
+- Auto-instrumented extensions (spans, no code): quarkus-rest/resteasy (server),
+  quarkus-rest-client(-jaxrs)/resteasy-client (client), quarkus-vertx (http), quarkus-grpc,
+  quarkus-messaging (Kafka, AMQP 1.0, RabbitMQ, Pulsar), quarkus-redis-client,
+  quarkus-mongodb-client, quarkus-scheduler, quarkus-smallrye-graphql, websockets-next.
+  JDBC spans: `quarkus.datasource.jdbc.telemetry=true` (off by default) — one span per JDBC query.
+- Instrumentation flags (default true, build time): `quarkus.otel.instrument.{grpc,rest,resteasy,
+  resteasy-client,messaging,vertx.http,vertx.event-bus,vertx.sql-client,vertx.redis-client,
+  jvm.metrics,http-server-metrics}`.
+- CDI-injectable: `io.opentelemetry.api.OpenTelemetry`, `io.opentelemetry.api.trace.Tracer`,
+  `io.opentelemetry.api.trace.Span`, `io.opentelemetry.api.baggage.Baggage`, and
+  `io.opentelemetry.api.metrics.Meter` (metrics API).
+- Custom spans: `io.opentelemetry.instrumentation.annotations.{WithSpan,SpanAttribute,
+  AddingSpanAttributes}` on **any CDI bean** method; reactive return types supported; if both
+  `@WithSpan` and `@AddingSpanAttributes` apply, `@WithSpan` wins. Manual spans:
+  `tracer.spanBuilder("name").startSpan()` + `Scope` + `end()`.
+- OTel metrics API: `Meter` (`counterBuilder` → `LongCounter`, `histogramBuilder(...).ofLongs()` →
+  `LongHistogram`, `gaugeBuilder(...).ofLongs().buildWithCallback(...)`). Attributes via
+  `io.opentelemetry.api.common.{Attributes,AttributeKey}`. No Timers/Distribution Summaries and no
+  annotations in the OTel API — histograms replace them; `@Counted`/`@Timed`/`@Gauge` are
+  **Micrometer-only**. Histogram bucket boundaries are inclusive and advisory only.
+- Dev-mode observability: LGTM Dev Service via `io.quarkus:quarkus-observability-devservices-lgtm`
+  (Maven scope `provided`) — starts Grafana + Tempo + Prometheus + Loki + OTel collector in dev mode
+  only and auto-injects the OTLP endpoint (do NOT write an unprefixed OTLP endpoint alongside it).
+  Disabled with `quarkus.observability.lgtm.enabled=false`; tests opt-in via
+  `quarkus.observability.enabled-in-tests=true`. Jaeger v2 alternative (manual, no properties
+  needed — default endpoint matches): `docker run -it -p 16686:16686 -p 4317:4317 -p 4318:4318
+  jaegertracing/jaeger:latest`, UI on 16686.
+- Testing: `io.opentelemetry:opentelemetry-sdk-testing` (test scope) + `@Produces @Singleton`
+  producers of `io.opentelemetry.sdk.testing.exporter.InMemory{Span,Metric}Exporter`; assert via
+  `getFinishedSpanItems()` / `getFinishedMetricItems()`. Speed-up keys from Quarkus's own
+  integration tests: `quarkus.otel.bsp.schedule.delay=100`, `quarkus.otel.metric.export.interval=100ms`.
+  For `@QuarkusIntegrationTest`, expose the exporters through a REST endpoint inside the app.
+- Micrometer interop (3 paths, do not mix): classic Micrometer + registry → `/q/metrics` (Prometheus;
+  unrelated to OTel); Quarkiverse `io.quarkiverse.micrometer.registry:quarkus-micrometer-registry-otlp`
+  pushes Micrometer metrics via OTLP; bridge `io.quarkus:quarkus-micrometer-opentelemetry`
+  (preview, since 3.19) routes Micrometer metrics through the OTel SDK (auto Micrometer binders off
+  by default — enable with `quarkus.micrometer.binder.*`).

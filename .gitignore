@@ -2,5 +2,5 @@
 *.iml
 .DS_Store
 
-# skill-creator eval workspaces
 .rabbitmq-skill-workspace/
+.quarkus-opentelemetry-configuration-workspace/
