@@ -41,7 +41,7 @@ The Quarkus project template configures surefire with:
   <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
   <maven.home>${maven.home}</maven.home>
 </systemPropertyVariables>
-```text
+```
 
 and a modern surefire version (the old Maven default does not understand JUnit 5). If tests boot with
 log-manager errors or zero tests are discovered, check these first — a missing

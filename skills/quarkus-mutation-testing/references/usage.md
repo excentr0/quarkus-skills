@@ -14,7 +14,7 @@ rm -f target/pitest-reports/mutations.xml && ./mvnw test-compile org.pitest:pite
 
 # Gradle
 rm -f build/reports/pitest/mutations.xml && ./gradlew pitest
-```text
+```
 
 If the build config sets `reportsDirectory` / a custom report dir, delete and read the XML there instead.
 

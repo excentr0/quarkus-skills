@@ -126,7 +126,7 @@ public jakarta.ws.rs.core.Response getAll(@jakarta.ws.rs.QueryParam("page") @jak
 | `${DtoFqn}` | DTO FQN | -- |
 | `${repoFieldName}` | repository field name | -- |
 | `${mapperFieldName}` | mapper field name | -- |
-| `${toDtoMethodName}` | mapper entity->DTO method | `toDto` |
+| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
 | `${entityVarPlural}` | pluralized entity var | -- |
 | `${dtoVarPlural}` | pluralized decapitalized DTO name | -- |
 | `${filterFieldName}` | entity field used by the filter | -- |

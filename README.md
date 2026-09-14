@@ -36,8 +36,14 @@ Quarkus Skills give the agent a narrower, Quarkus-aware model of work:
 | [`quarkus-security-configuration`](skills/quarkus-security-configuration/SKILL.md) | Configure authentication and authorization: quarkus-oidc (bearer / code flow), path policies, `@RolesAllowed`. | Ready |
 | [`quarkus-kafka-configuration`](skills/quarkus-kafka-configuration/SKILL.md) | Configure Kafka messaging: channels, `@Incoming`/`@Outgoing`/`@Channel`, serializers, Dev Services. | Ready |
 | [`quarkus-run-tests`](skills/quarkus-run-tests/SKILL.md) | Run Maven/Gradle tests: unit vs `@QuarkusTest` vs `@QuarkusIntegrationTest`, report compact results. | Ready |
+| [`quarkus-test-writing`](skills/quarkus-test-writing/SKILL.md) | Write Quarkus tests: pick the right test type, detect test conventions, generate test code with Dev Services in mind. | Ready |
 | [`quarkus-coverage`](skills/quarkus-coverage/SKILL.md) | Measure test coverage via `quarkus-jacoco` and report the number. | Ready |
 | [`quarkus-mutation-testing`](skills/quarkus-mutation-testing/SKILL.md) | Set up and run PIT mutation testing, report the mutation score. | Ready |
+| [`quarkus-checkstyle`](skills/quarkus-checkstyle/SKILL.md) | Set up and run Checkstyle via Maven/Gradle, report and triage violations by rule. | Ready |
+| [`quarkus-db-migrations`](skills/quarkus-db-migrations/SKILL.md) | Add and evolve Flyway/Liquibase schema migrations: extensions, naming, `migrate-at-start`, multi-datasource. | Ready |
+| [`quarkus-config`](skills/quarkus-config/SKILL.md) | Add typed configuration: `@ConfigMapping` / `@ConfigProperty`, profiles, secrets via env references. | Ready |
+| [`quarkus-native-build`](skills/quarkus-native-build/SKILL.md) | Build and package: fast-jar, uber-jar, native executable, container image. | Ready |
+| [`quarkus-rest-client`](skills/quarkus-rest-client/SKILL.md) | Create typed REST clients: `@RegisterRestClient` interfaces, mandatory base URL, mocking in tests. | Ready |
 
 Skills are **Java-first** (Kotlin variants can be added later).
 

@@ -188,6 +188,8 @@ script to execute top-to-bottom. If a question's answer is already determined by
 
 ## Step 0 -- Conversation context first (REQUIRED, no tool calls)
 
+Tell the user: `Step 0/6: Analyzing conversation context...`
+
 Before any file read, before any question, **re-read the user's prompt and the prior turns of
 this conversation** and extract whatever is already stated. This step costs nothing and prevents
 the most common failure mode of this skill — asking the user something they already said.
@@ -225,6 +227,8 @@ Just internalize what the user already said before proceeding to Step 1.
 
 ## Step 1 -- Gather minimal project context (automatic, no questions)
 
+Tell the user: `Step 1/6: Gathering project context...`
+
 Read only the files whose content is **actually consumed** by a later step. Do not pre-read
 "in case we need it" — every variable here must have a concrete downstream user.
 
@@ -237,6 +241,9 @@ Read only the files whose content is **actually consumed** by a later step. Do n
 
 From the resource scan, derive `mainPackage` (package of existing resources, or the root package
 of `src/main/java` sources).
+
+For the full convention-scoring procedure (ID strategy, DTO style, mapper naming, transactional
+placement), follow [`references/detect-conventions.md`](references/detect-conventions.md).
 
 Determine the build-related flags:
 - `hasRestJackson` — `io.quarkus:quarkus-rest-jackson` (or `quarkus-rest` + a JSON provider) in the build file.
@@ -260,6 +267,8 @@ extensions): ask which module to use, then repeat this step scoped to that modul
 ---
 
 ## Step 2 -- Select entity
+
+Tell the user: `Step 2/6: Selecting entity...`
 
 By Step 0 you should already know the entity if the user mentioned it.
 Most common case: the user wrote "create CRUD resource for Product" → entity is `Product`, skip
@@ -289,6 +298,8 @@ After the entity FQN is known, read the entity source file and extract:
 
 ## Step 3 -- Select repository
 
+Tell the user: `Step 3/6: Selecting repository...`
+
 By Step 0 you may already know the repository if the user mentioned it.
 
 Grep `implements io.quarkus.hibernate.orm.panache.PanacheRepository` and
@@ -313,6 +324,8 @@ After selection:
 
 ## Step 4 -- DTO and customization questions
 
+Tell the user: `Step 4/6: Resolving DTO and customization...`
+
 By Step 0 you may already know the DTO mode if the user mentioned it (e.g. "with DTO", "without
 DTO", "use entity directly", "map to ProductDto"). If so, skip the question and proceed.
 
@@ -332,12 +345,14 @@ entity.
 - `DtoFqn`, `dtoVar`, `dtoVarPlural`
 - `MapperFqn` -- FQN of the mapper bean
 - `mapperFieldName` -- decapitalized mapper class name
-- `toDtoMethodName` -- mapper method entity-->DTO (e.g. `toDto`)
-- `toEntityMethodName` -- mapper method DTO-->entity (e.g. `toEntity`)
-- `updateEntityMethodName` -- mapper method that copies a DTO into an existing entity (e.g. `updateEntity`)
+- `toDtoMethodName` -- mapper method entity-->DTO (default per quarkus-mapper-creator: `to${DtoShortName}`, e.g. `toOrderDto`)
+- `toEntityMethodName` -- mapper method DTO-->entity (default: `toEntity`)
+- `updateEntityMethodName` -- mapper method that copies a DTO into an existing entity (default per quarkus-mapper-creator: `partialUpdate`)
 
 Warn: CREATE, PATCH and PATCH_MANY require the mapper to have `toEntity` and
-`updateEntity` (the latter copying into an existing entity) methods in addition to `toDto`.
+`updateEntityMethodName` (the latter copying into an existing entity) methods in addition to `toDtoMethodName`.
+quarkus-mapper-creator generates exactly this set with its defaults — keep the method names
+consistent between the two skills.
 
 **If no DTO exists for the entity:** delegate to the `quarkus-dto-creator` skill to create one.
 That skill handles DTO generation and can hand off to `quarkus-mapper-creator` for the mapper
@@ -398,6 +413,8 @@ skipping the rest.
 ---
 
 ## Step 5 -- Generate code
+
+Tell the user: `Step 5/6: Generating code...`
 
 WA work units, in order. Load each example file right before writing its code.
 
@@ -474,6 +491,8 @@ Read `examples/_beans/repository/java.md`. Use the **Write** tool to create
 ---
 
 ## Step 6 -- Dependencies & properties (automatic)
+
+Tell the user: `Step 6/6: Applying dependencies and properties...`
 
 1. Read [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md)
 2. For each artifact NOT in `presentDeps`:

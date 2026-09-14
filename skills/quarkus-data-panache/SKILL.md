@@ -34,6 +34,7 @@ Detect the persistence setup from the build files before touching any code:
 
 If neither Panache extension is present, stop and tell the user this skill targets Panache projects;
 offer to add the extension (`./mvnw quarkus:add-extension -Dextensions="hibernate-orm-panache,jdbc-postgresql"`).
+   Required dependency blocks: [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md).
 
 ---
 

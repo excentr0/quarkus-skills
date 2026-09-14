@@ -21,7 +21,7 @@ finishes usefully. So `@QuarkusTest` classes are **not** PIT drivers; the fast p
 grep -rl "@QuarkusTest" src/test/java | head -50
 grep -rl "@QuarkusIntegrationTest" src/test/java | head -50
 grep -rL "@QuarkusTest\|@QuarkusIntegrationTest" src/test/java --include='*.java' | head -50
-```text
+```
 
 - **plain JUnit 5** (no Quarkus test annotation) → PIT drivers; put these in `targetTests`.
 - **`@QuarkusTest`** → excluded from `targetTests`. Keep the exclusion explicit and recorded —

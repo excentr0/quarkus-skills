@@ -15,7 +15,7 @@ must run the same JDK as the project.
 
 ```bash
 ./mvnw -q dependency:tree -DincludeArtifactIds=junit-platform-commons
-```text
+```
 
 If it resolves to 6.x, the `pitest-junit5-plugin` bridge works but the run needs its own launcher on the
 PIT classpath (the plugin's dependency block below is where it goes) — otherwise discovery can silently
@@ -74,13 +74,13 @@ Then check the `pitest-junit5-plugin` release against the Quarkus floor: ≥ 1.1
     <mutationThreshold>0</mutationThreshold>
   </configuration>
 </plugin>
-```text
+```
 
 ## Variables
 
 | Variable | Source | Default |
 |----------|--------|---------|
-| `{pitestMavenVersion}` | newest on Central | — (resolve in §2) |
+| `${pitestMavenVersion}` | newest on Central | — (resolve in §2) |
 | `{pitestJunit5PluginVersion}` | newest on Central, ≥ 1.19.4 for Quarkus 3.22+ | — |
 | `{targetClasses}` | project business packages | `org.acme.*` |
 | `{targetTests}` | the fast plain-JUnit test classes | the `*Test` classes that do not boot the app |

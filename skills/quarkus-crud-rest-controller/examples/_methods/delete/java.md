@@ -56,7 +56,7 @@ public void delete(@jakarta.ws.rs.PathParam("id") ${IdType} id) {
 | `${repoFieldName}` | repository field name | -- |
 | `${entityVar}` | decapitalized entity name | -- |
 | `${mapperFieldName}` | mapper field name | -- |
-| `${toDtoMethodName}` | mapper entity->DTO method | `toDto` |
+| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
 
 ## Notes
 - The default variants are idempotent: deleting a missing entity is not an error.

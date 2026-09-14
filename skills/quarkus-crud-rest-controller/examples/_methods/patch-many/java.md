@@ -34,7 +34,10 @@ public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java
     for (${EntityFqn} ${entityVar} : ${entityVarPlural}) {
         ${DtoFqn} ${dtoVar} = ${mapperFieldName}.${toDtoMethodName}(${entityVar});
         try {
-            objectMapper.readerForUpdating(${dtoVar}).readValue(patchNode);
+            // records are immutable — merge via Map instead of readerForUpdating
+        java.util.Map<String, Object> current = objectMapper.convertValue(${dtoVar}, java.util.Map.class);
+        current.putAll(objectMapper.convertValue(patchNode, java.util.Map.class));
+        ${dtoVar} = objectMapper.convertValue(current, ${DtoFqn}.class);
         } catch (${JsonProcessingExceptionFqn} e) {
             throw new jakarta.ws.rs.BadRequestException("Invalid patch payload: " + e.getMessage());
         }
@@ -58,8 +61,8 @@ public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java
 | `${entityVarPlural}` | pluralized entity var | -- |
 | `${idAccessExpression}` | ID access inside a lambda whose parameter is `entity` (Step 2) | `entity.id` (or `entity.getId()`) |
 | `${mapperFieldName}` | mapper field name | -- |
-| `${toDtoMethodName}` | mapper entity->DTO method | `toDto` |
-| `${updateEntityMethodName}` | mapper method copying DTO into an existing entity | `updateEntity` |
+| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
+| `${updateEntityMethodName}` | mapper method copying DTO into an existing entity | `partialUpdate` |
 | `${JsonNodeFqn}` | Jackson JsonNode FQN, resolved in Step 1 | `com.fasterxml.jackson.databind.JsonNode` |
 | `${JsonProcessingExceptionFqn}` | Jackson exception FQN, resolved in Step 1 | `com.fasterxml.jackson.core.JsonProcessingException` |
 

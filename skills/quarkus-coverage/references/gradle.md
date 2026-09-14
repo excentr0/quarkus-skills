@@ -4,7 +4,7 @@
 
 ```kotlin
 testImplementation("io.quarkus:quarkus-jacoco")
-```text
+```
 
 That is the whole setup: the extension wires the JaCoCo agent and generates the report itself. Do NOT
 also apply the `jacoco` Gradle plugin to the same classes — two agents on one classpath produce
@@ -45,7 +45,7 @@ Same verified settings as Maven — a shared data file plus aggregation:
 quarkus.jacoco.data-file=/path/to/shared/data-file
 quarkus.jacoco.reuse-data-file=true
 quarkus.jacoco.aggregate-report-data=true
-```text
+```
 
 Without `reuse-data-file`, each module overwrites the shared file and the report describes only the
 last module that ran.

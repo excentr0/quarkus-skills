@@ -6,7 +6,7 @@ Never assume a task name — list them and read the descriptions:
 
 ```bash
 ./gradlew tasks --all
-```text
+```
 
 Conventional mapping for a Quarkus project:
 
@@ -53,7 +53,7 @@ A full picture of everything that ran (all test tasks):
 
 ```bash
 ./gradlew test quarkusIntTest   # when the project has both
-```text
+```
 
 ## 5. Remember the mapping
 

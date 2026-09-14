@@ -1,7 +1,7 @@
 # Detect Project Conventions
 
 How to derive the project's own conventions from source files before generating anything.
-Follow substeps 1.1 → 1.4 in order. Do not skip or reorder them.
+Follow substeps 1.1 → 1.5 in order. Do not skip or reorder them.
 
 ---
 
@@ -51,7 +51,7 @@ DTO conventions (score separately — only relevant when DTO mode is selected):
 - **DTO naming** — `XxxDto`, `XxxRestDto`, `XxxResponse`? Default: `{EntityName}Dto`
 - **DTO package** — `.dto`, `.rest.dto`, alongside the resource? Default: same convention as existing DTOs
 - **Mapper style** — MapStruct `@Mapper(componentModel = "cdi")` interfaces vs custom `@ApplicationScoped` converters. Default: MapStruct when `hasMapStruct`, else custom converter
-- **Mapper method names** — `toDto` / `toEntity` / `updateEntity`? Default: those three names
+- **Mapper method names** — align with quarkus-mapper-creator defaults: `to${DtoShortName}` / `toEntity` / `partialUpdate` (copy-into-existing). Detect actual names from existing mapper interfaces.
 
 ---
 

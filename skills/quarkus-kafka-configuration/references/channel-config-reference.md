@@ -91,13 +91,14 @@ When a database write and a Kafka send must succeed or fail together, use the tr
 (`io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions`) and the `withTransaction` API:
 
 ```java
-@Channel("kafka") KafkaTransactions<${valueType}> emitter;
+@Inject
+@Channel("kafka") KafkaTransactions<${entityType}> emitter;
 
 @Transactional
-public void post(${valueType} payload) {
+public void post(${entityType} entity) {
     emitter.withTransaction(e -> {
-        payload.persist();
-        e.send(payload);
+        entity.persist();
+        e.send(entity);
         return Uni.createFrom().voidItem();
     }).await().indefinitely();
 }

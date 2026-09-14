@@ -83,7 +83,7 @@ Annotations can sit on a resource class (applies to all methods) or on individua
 ## How token claims become roles
 
 - By default, the token **`groups` array claim** contains the roles. If the token was issued by
-  Keycloak, the `realm_access/roles` and `realm_access/<client-id>/roles` claims are also checked
+  Keycloak, the realm-roles claim `realm_access/roles` and the client-roles claim `resource_access/<client-id>/roles` are also checked
   automatically.
 - Custom claim: `quarkus.oidc.roles.role-claim-path=<claim or nested/path>` — supports a top-level
   array claim or a nested path with `/` as separator; quote namespace-qualified claim names

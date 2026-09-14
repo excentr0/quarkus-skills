@@ -36,7 +36,7 @@ public java.util.List<${DtoFqn}> getMany(@jakarta.ws.rs.QueryParam("ids") java.u
 | `${repoFieldName}` | repository field name | -- |
 | `${entityVarPlural}` | pluralized entity var | -- |
 | `${mapperFieldName}` | mapper field name | -- |
-| `${toDtoMethodName}` | mapper entity->DTO method | `toDto` |
+| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
 
 ## Notes
 - Requested as a repeated query parameter: `?ids=1&ids=2&ids=3`.

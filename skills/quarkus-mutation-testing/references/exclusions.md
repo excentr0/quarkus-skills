@@ -51,7 +51,7 @@ package org.acme;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface DoNotMutate {
 }
-```text
+```
 
 `DoNotMutate`, `Generated` and `CoverageIgnore` are recognised by PIT with no configuration at all,
 which is why the first option needs none. A name of your own has to be registered, and the parameter

@@ -45,7 +45,7 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 | `quarkus-smallrye-openapi` | OpenAPI schema + Swagger UI in dev |
 | `quarkus-jacoco` | JaCoCo coverage (test scope; replaces jacoco-maven-plugin) |
 | `io.quarkiverse.mapstruct:quarkus-mapstruct` | MapStruct support (Quarkiverse): reads `@Mapper`/`@MapperConfig`, makes generated mappers native-safe and dev-mode-recompilable. It does NOT run the MapStruct annotation processor — the build still needs `org.mapstruct:mapstruct-processor` via maven-compiler-plugin `annotationProcessorPaths` (or Gradle `annotationProcessor`). |
-| `quarkus-junit5` / `quarkus-junit5-mockito` | `@QuarkusTest` / `@InjectMock` |
+| `quarkus-junit5` / `quarkus-junit-mockito` | `@QuarkusTest` / `@InjectMock` (`io.quarkus.test.InjectMock`) |
 | `io.rest-assured:rest-assured` | HTTP tests (URL auto-configured in `@QuarkusTest`) |
 
 ## 3. Spring → Quarkus conversion (do not ship Spring code in Quarkus skills)
@@ -139,7 +139,9 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 - Method-level: `@RolesAllowed("admin")`, `@PermitAll`, `@DenyAll` (jakarta.annotation.security);
   user: inject `SecurityIdentity` (io.quarkus.security.identity) or `JsonWebToken`
   (org.eclipse.microprofile.jwt) — `jwt.getSubject()`, `jwt.getClaim("name")`, `idToken` via `@IdToken` (web-app).
-- Dev Services can auto-start a Keycloak realm in dev/test.
+- Dev Services auto-starts Keycloak in dev/test; import a realm with
+  `quarkus.keycloak.devservices.realm-path=<realm.json>`; the started instance URL is exposed as the
+  `keycloak.url` config property (usable in other properties via `${keycloak.url}`).
 
 ## 8. Kafka (quarkus-messaging-kafka)
 
@@ -163,7 +165,8 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   automatically; rest-assured base URL auto-configured.
 - `@QuarkusIntegrationTest`: runs the packaged artifact (`quarkus:build` output / native binary); NO CDI injection,
   no `@InjectMock`, no config overrides — black-box HTTP tests only.
-- Mocking: `@InjectMock` field + `Mockito.when(...)` in `@BeforeEach` (quarkus-junit5-mockito).
+- Mocking: `@InjectMock` (`io.quarkus.test.InjectMock`, requires `quarkus-junit-mockito`) field +
+  `Mockito.when(...)` in `@BeforeEach`; legacy package `io.quarkus.test.junit.mockito.InjectMock` is pre-3.x.
 - `@TestHTTPEndpoint(FruitResource.class)` on a `RestAssured` field targets the resource path.
 - Surefire (Maven) needs a modern version + system props:
   `java.util.logging.manager=org.jboss.logmanager.LogManager`, `maven.home=${maven.home}`.
@@ -187,3 +190,60 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 - Native build: `./mvnw package -Dnative` (requires GraalVM); container image: `quarkus-container-image-*`
   extensions, `./mvnw package -Dquarkus.container-image.build=true`. Skills should mention `quarkus:build`
   produces a fast-jar in `target/quarkus-app/` runnable via `java -jar target/quarkus-app/quarkus-run.jar`.
+
+---
+
+## 12. Native / container build (verified details)
+
+- JVM fast-jar: `./mvnw quarkus:build` → runnable app in `target/quarkus-app/` —
+  `java -jar target/quarkus-app/quarkus-run.jar`. Also `-Dquarkus.package.type=uber-jar` for a fat jar.
+- Native: `./mvnw package -Dnative` (or `-Dquarkus.native.enabled=true`) — requires GraalVM/Mandrel locally
+  OR a container build: `-Dquarkus.native.container-build=true` (builder image via
+  `-Dquarkus.native.builder-image=quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21`).
+  Gradle: `./gradlew build -Dquarkus.native.enabled=true`.
+  Output: `target/*-runner` (native executable). `quarkus build --native` via Quarkus CLI works too.
+- Container images: add `quarkus-container-image-docker` / `-jib` / `-podman`; build with
+  `./mvnw package -Dquarkus.container-image.build=true`; name/group/tag via `quarkus.container-image.*`
+  (`quarkus.container-image.group=<registry/project>`, `.name=`, `.tag=`). Native + container can be
+  combined: `-Dquarkus.container-image.build=true -Dnative -Dquarkus.native.container-build=true`.
+
+## 13. Flyway / Liquibase migrations
+
+- Flyway: `quarkus-flyway` extension; versioned SQL in `src/main/resources/db/migration/`, naming
+  `V<VERSION>__<Description>.sql` (e.g. `V1.1__My_description.sql`); repeatable migrations default prefix
+  `R` (`quarkus.flyway.repeatable-sql-migration-prefix`). Enable at startup: `quarkus.flyway.migrate-at-start=true`.
+  Other keys: `quarkus.flyway.locations` (default `db/migration`), `quarkus.flyway.table`,
+  `quarkus.flyway.baseline-on-migrate`, `quarkus.flyway.schemas`.
+- Multiple datasources: per-datasource prefix `quarkus.flyway.<datasource-name>.*`.
+- Liquibase: `quarkus-liquibase` extension; `quarkus.liquibase.migrate-at-start=true`; changelog XML/YAML/SQL
+  under `src/main/resources/db/` (verify exact default filename in the quarkus-liquibase guide before
+  asserting it: the guide examples use `db/changelog/master.xml` with `quarkus.liquibase.change-log` to point at it).
+- Flyway CLI goal inside Maven: the extension does the migration during dev/test/start — no separate
+  maven goal needed. Dev Services: DB container starts in dev/test automatically; in `%prod` the real
+  datasource config applies.
+
+## 14. REST client (quarkus-rest-client)
+
+- Dependencies: `quarkus-rest-client` + `quarkus-rest-client-jackson` (JSON).
+- Declarative client: interface with JAX-RS annotations + `@RegisterRestClient(configKey = "bar")`
+  (`org.eclipse.microprofile.rest.client.inject.RegisterRestClient`):
+  `@Path("foo") @RegisterRestClient(configKey = "bar") public interface BarClient { @GET Response get(); }`
+- Injection: `@Inject @RestClient BarClient client;` (qualifier `@RestClient` from the same package).
+- Base URL is MANDATORY: `quarkus.rest-client."bar".url=https://api.example.com` (key = configKey,
+  or the interface FQN without configKey). Optional `quarkus.rest-client."bar".scope=jakarta.inject.Singleton`.
+  Per-invocation base-URL override: `@io.quarkus.rest.client.reactive.Url` on a method parameter.
+- Testing: in `@QuarkusTest`, mock with `@InjectMock @RestClient BarClient client;` + `Mockito.when(...)`.
+- A response with status ≥ 400 makes the client throw `jakarta.ws.rs.WebApplicationException` by
+  default (MicroProfile REST Client behavior); map or catch it explicitly.
+
+## 15. Config mapping details
+
+- `@ConfigMapping(prefix = "server")` interface: methods map to properties (`server.host`, `server.port`).
+- Nested groups: nested interfaces (`interface Log { boolean enabled(); }` → `server.log.enabled`).
+- Defaults: `@WithDefault("8080")`; renames: `@WithName("optional.int")`.
+- Optional types: `Optional<String>`, `OptionalInt` — absent property is fine; non-Optional missing
+  property fails startup (`NoSuchElementException` → `ConfigurationException`).
+- Lists: `List<String>` maps from comma-separated values. Environment variables override properties
+  (`SERVER_HOST` → `server.host`).
+- `@ConfigProperty(name = "...", defaultValue = "...")` for one-off injection; `Optional<T>` injection
+  for may-be-missing properties.

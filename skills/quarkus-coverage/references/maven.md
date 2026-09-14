@@ -8,7 +8,7 @@
   <artifactId>quarkus-jacoco</artifactId>
   <scope>test</scope>
 </dependency>
-```text
+```
 
 That is the whole setup: the extension wires the JaCoCo agent and generates the report itself. Do NOT
 also add `jacoco-maven-plugin` — two agents on the same classes produce "classes already instrumented"

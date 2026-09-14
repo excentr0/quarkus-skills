@@ -19,7 +19,7 @@ No coverage (not reached by the driving suite), <n>:
 - <Class>.<method>  <file>:<line>  <Mutator>
 
 HTML: <path to index.html>
-```text
+```
 
 List every survivor when there are ten or fewer; above that, list the ten in the classes with the most
 survivors and give the remaining count.
@@ -47,7 +47,7 @@ Cause: <n> failing test(s) in <suite>
 - <test>
     <message>
     <key stacktrace line(s), verbatim>
-```text
+```
 
 Give the message AND the key stacktrace lines verbatim — the `file:line` is what makes it actionable.
 Never fall back to an earlier number when this run produced none.

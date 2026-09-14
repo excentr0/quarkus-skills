@@ -98,6 +98,8 @@ prior turns, and the user's prompt. Only ask when context yields no clear defaul
 
 ## Step 0 — Conversation context (mental, no tool calls)
 
+Tell the user: `Step 0/6: Analyzing conversation context...`
+
 Re-read the user's prompt and prior turns; tick off everything already stated:
 
 | Input | Signal in the prompt |
@@ -114,6 +116,8 @@ Re-read the user's prompt and prior turns; tick off everything already stated:
 Tick → skip the corresponding question. Do not announce Step 0.
 
 ## Step 1 — Gather context (file reads + greps, no MCP)
+
+Tell the user: `Step 1/6: Gathering context...`
 
 | Source | Variables extracted |
 |---|---|
@@ -137,6 +141,8 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 ## Step 2 — All questions in ONE batch
 
+Tell the user: `Step 2/6: Asking all questions...`
+
 Ask everything in a single structured-question call (up to 5 questions). Pre-fill from context, skip
 already-answered:
 
@@ -156,6 +162,8 @@ If the user says "use defaults" — skip type and name questions, default outgoi
 
 ## Step 3 — Bean target (Path B only)
 
+Tell the user: `Step 3/6: Picking bean target...`
+
 If `existingBeanClasses` is non-empty, apply Decision principle 2 (one-line confirmation), naming the class:
 
 > Project already has messaging code in `${class.fqn}`. Add the new consumer/producer there? (Yes/No)
@@ -171,6 +179,8 @@ If `existingBeanClasses` is non-empty, apply Decision principle 2 (one-line conf
 Usually answered silently from context.
 
 ## Step 4 — Write channel configuration + add dependency
+
+Tell the user: `Step 4/6: Writing channel configuration...`
 
 ### 4a. Channel configuration
 
@@ -229,6 +239,8 @@ matching the project's existing dependency style (BOM-managed, no `<version>`).
 
 ## Step 5 — Generate messaging beans (Path B only)
 
+Tell the user: `Step 5/6: Generating messaging beans...`
+
 1. Pick the example per direction:
    - consumer → [`examples/consumer-bean.md`](examples/consumer-bean.md)
    - producer → [`examples/producer-bean.md`](examples/producer-bean.md)
@@ -248,6 +260,8 @@ matching the project's existing dependency style (BOM-managed, no `<version>`).
      imports without duplicates. Do not create a second file.
 
 ## Step 6 — Report
+
+Tell the user: `Step 6/6: Reporting...`
 
 Match the user's conversation language. Include:
 - Path taken (config-only vs config + beans).

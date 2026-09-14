@@ -36,4 +36,4 @@ public ${DtoFqn} getOne(@jakarta.ws.rs.PathParam("id") ${IdType} id) {
 | `${repoFieldName}` | repository field name | -- |
 | `${entityVar}` | decapitalized entity name | -- |
 | `${mapperFieldName}` | mapper field name | -- |
-| `${toDtoMethodName}` | mapper entity->DTO method | `toDto` |
+| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |

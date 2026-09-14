@@ -31,7 +31,7 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
    - `*IT` classes — packaged-artifact tests, never PIT drivers.
 
    Read `references/quarkus-tests.md` before step 1: on this stack the test layout decides
-   `targetTests`/`targetTests`, and getting it wrong turns a useful run into a multi-hour one.
+   `targetClasses`/`targetTests`, and getting it wrong turns a useful run into a multi-hour one.
 
 ---
 
@@ -93,7 +93,7 @@ Tell the user: `Step 4/4: Recording what was resolved...`
 
 - [ ] The PIT plugin and `pitest-junit5-plugin` versions come from preflight facts (and the ≥ 1.19.4
       floor for Quarkus 3.22+), not from memory of another project.
-- [ ] `targetTests`/`targetTests` name test classes that actually exist and that PIT can drive —
+- [ ] `targetClasses`/`targetTests` name test classes that actually exist and that PIT can drive —
       re-checked after any exclusion change.
 - [ ] Reported score, threshold and mutant counts are verbatim from `mutations.xml` — never estimated
       from a percentage in an ad-hoc log line.

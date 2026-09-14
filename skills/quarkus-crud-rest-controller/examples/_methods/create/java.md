@@ -48,7 +48,7 @@ public ${DtoFqn} create(${DtoFqn} ${dtoVar}) {
 | `${repoFieldName}` | repository field name | -- |
 | `${mapperFieldName}` | mapper field name | -- |
 | `${toEntityMethodName}` | mapper DTO->entity method | `toEntity` |
-| `${toDtoMethodName}` | mapper entity->DTO method | `toDto` |
+| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
 
 ## Notes
 - `persistAndFlush` (not `persist`) so a database-generated ID is assigned before the entity is

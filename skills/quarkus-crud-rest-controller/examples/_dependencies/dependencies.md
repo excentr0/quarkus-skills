@@ -6,7 +6,8 @@
 | quarkus-hibernate-orm-panache | io.quarkus | implementation | always (synchronous Panache) |
 | quarkus-hibernate-validator | io.quarkus | implementation | when `@Valid` is generated (`hasValidation`) |
 | quarkus-mapstruct | io.quarkiverse.mapstruct | implementation | when DTO mode uses MapStruct |
-| mapstruct | org.mapstruct | provided (annotation processor) | when DTO mode uses MapStruct |
+| mapstruct | org.mapstruct | compile (annotation API) | when DTO mode uses MapStruct |
+| mapstruct-processor | org.mapstruct | annotation processor (maven-compiler-plugin annotationProcessorPaths / Gradle annotationProcessor) | when DTO mode uses MapStruct |
 
 Preferred way to add a Quarkus extension (updates the build file and resolves the version):
 ```bash
@@ -58,6 +59,9 @@ annotationProcessor 'org.mapstruct:mapstruct-processor'
     <artifactId>mapstruct</artifactId>
 </dependency>
 ```
+
+<!-- MapStruct processor wiring (maven-compiler-plugin annotationProcessorPaths with
+     org.mapstruct:mapstruct-processor) is owned by the quarkus-mapper-creator skill. -->
 
 ## Notes
 - Quarkus artifacts are version-managed by the Quarkus BOM (`io.quarkus.platform:quarkus-bom`) —
