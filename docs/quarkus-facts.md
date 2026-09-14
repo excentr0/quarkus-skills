@@ -241,3 +241,37 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   (`SERVER_HOST` → `server.host`).
 - `@ConfigProperty(name = "...", defaultValue = "...")` for one-off injection; `Optional<T>` injection
   for may-be-missing properties.
+
+## 16. RabbitMQ (quarkus-messaging-rabbitmq)
+
+- Extension: `io.quarkus:quarkus-messaging-rabbitmq` (preview status); connector value is exactly
+  `smallrye-rabbitmq`. Companion guides: quarkus.io/guides/rabbitmq and quarkus.io/guides/rabbitmq-reference.
+- Programming model is standard Reactive Messaging: `@Incoming`/`@Outgoing`/`@Channel` + `Emitter` —
+  same code as the Kafka connector, only connector config and JSON mapping differ.
+- **Incoming channel → queue, outgoing channel → exchange.** Both names default to the channel name
+  (`queue.name` / `exchange.name` written only when different; `""` = default exchange).
+- Defaults: `queue.declare=true` (declares queue **and binding**), `queue.durable=true`,
+  `exchange.declare=true`, `exchange.durable=true`, `exchange.auto-delete=false`, `exchange.type=topic`,
+  `routing-keys=#` (binding), `failure-strategy=reject` (also `fail`, `accept`),
+  `auto-acknowledgement=false`. Existing infra → name + `queue.declare=false` / `exchange.declare=false`.
+- **No serializer/deserializer config keys exist** (unlike Kafka). Outgoing payload conversion is automatic:
+  `String`/primitives/`UUID` → `text/plain`; `JsonObject`/`JsonArray`/any POJO → JSON (`application/json`,
+  Json Mapper); `byte[]`/`Buffer` → binary. Unserializable payload → nacked.
+- Incoming JSON body → consumer takes `io.vertx.core.json.JsonObject` and maps with `.mapTo(MyType.class)`
+  (not the POJO as parameter); `content-type-override` forces `content_type` on incoming.
+- Metadata: `io.smallrye.reactive.messaging.rabbitmq.IncomingRabbitMQMetadata` (getRoutingKey/getHeaders/
+  getContentType/getHeader...) and `.OutgoingRabbitMQMetadata` (Builder: withRoutingKey/withHeader/
+  withTimestamp) attached via `Message.of(payload, Metadata.of(metadata))`.
+- Broker access: global `rabbitmq-host`/`rabbitmq-port` (5672)/`rabbitmq-username`/`rabbitmq-password`;
+  per-channel `host`/`port`/`username`/`password` (aliases). Writing them unprefixed disables Dev
+  Services for RabbitMQ — real broker goes under `%prod.` only.
+- Dev Services: image `docker.io/library/rabbitmq:3.12-management` (http-port = management UI),
+  `quarkus.rabbitmq.devservices.{enabled,port,http-port,shared,service-name,image-name}` plus
+  pre-provisioning keys `exchanges.<n>.{type,durable,auto-delete,vhost}` (type default `direct`),
+  `queues.<n>.{durable,auto-delete,vhost}`, `bindings.<n>.{source,routing-key,destination,
+  destination-type,vhost}`.
+- DLQ (incoming): `auto-bind-dlq=true` + `dead-letter-queue-name` (default `<queue>.dlq`),
+  `dead-letter-exchange` (default `DLX`), `dead-letter-exchange-type` (default `direct`),
+  `dead-letter-routing-key`, `dlx.declare`, `dead-letter-queue-type` [quorum, classic, stream].
+- `@Blocking` (`io.smallrye.reactive.messaging.annotations.Blocking`) runs a blocking consumer method on
+  a worker thread. Health: per-channel `health-enabled` with `quarkus-smallrye-health`.

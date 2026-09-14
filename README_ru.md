@@ -36,6 +36,7 @@ Skills дают агенту узкую, Quarkus-aware модель работы
 | [`quarkus-mapper-creator`](skills/quarkus-mapper-creator/SKILL.md) | Мапперы entity↔DTO: MapStruct (`quarkus-mapstruct`) или кастомный конвертер. | Ready |
 | [`quarkus-security-configuration`](skills/quarkus-security-configuration/SKILL.md) | Аутентификация/авторизация: quarkus-oidc (bearer / code flow), path-политики, `@RolesAllowed`. | Ready |
 | [`quarkus-kafka-configuration`](skills/quarkus-kafka-configuration/SKILL.md) | Kafka: каналы, `@Incoming`/`@Outgoing`/`@Channel`, сериализаторы, Dev Services. | Ready |
+| [`quarkus-rabbitmq-configuration`](skills/quarkus-rabbitmq-configuration/SKILL.md) | RabbitMQ: каналы, очереди/exchange/роутинг-кеи, `@Incoming`/`@Outgoing`/`@Channel`, JSON-пейлоады, Dev Services. | Ready |
 | [`quarkus-run-tests`](skills/quarkus-run-tests/SKILL.md) | Запуск тестов: unit / `@QuarkusTest` / `@QuarkusIntegrationTest`, компактный отчёт. | Ready |
 | [`quarkus-test-writing`](skills/quarkus-test-writing/SKILL.md) | Написание тестов: выбор типа, конвенции проекта, генерация тестов с учётом Dev Services. | Ready |
 | [`quarkus-coverage`](skills/quarkus-coverage/SKILL.md) | Покрытие через `quarkus-jacoco` и отчёт числом. | Ready |

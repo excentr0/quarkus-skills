@@ -37,6 +37,7 @@ Quarkus Skills give the agent a narrower, Quarkus-aware model of work:
 | [`quarkus-mapper-creator`](skills/quarkus-mapper-creator/SKILL.md) | Create mappers between entities and DTOs via MapStruct (`quarkus-mapstruct`) or a custom converter. | Ready |
 | [`quarkus-security-configuration`](skills/quarkus-security-configuration/SKILL.md) | Configure authentication and authorization: quarkus-oidc (bearer / code flow), path policies, `@RolesAllowed`. | Ready |
 | [`quarkus-kafka-configuration`](skills/quarkus-kafka-configuration/SKILL.md) | Configure Kafka messaging: channels, `@Incoming`/`@Outgoing`/`@Channel`, serializers, Dev Services. | Ready |
+| [`quarkus-rabbitmq-configuration`](skills/quarkus-rabbitmq-configuration/SKILL.md) | Configure RabbitMQ messaging: channels, queues/exchanges/routing keys, `@Incoming`/`@Outgoing`/`@Channel`, JSON payloads, Dev Services. | Ready |
 | [`quarkus-run-tests`](skills/quarkus-run-tests/SKILL.md) | Run Maven/Gradle tests: unit vs `@QuarkusTest` vs `@QuarkusIntegrationTest`, report compact results. | Ready |
 | [`quarkus-test-writing`](skills/quarkus-test-writing/SKILL.md) | Write Quarkus tests: pick the right test type, detect test conventions, generate test code with Dev Services in mind. | Ready |
 | [`quarkus-coverage`](skills/quarkus-coverage/SKILL.md) | Measure test coverage via `quarkus-jacoco` and report the number. | Ready |
