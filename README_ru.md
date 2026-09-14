@@ -42,7 +42,7 @@ Skills ориентированы на **Java** (Kotlin-варианты мож�
 
 ## Формат скилла
 
-```
+```text
 skills/<name>/
 ├── SKILL.md        # входная точка: frontmatter (name, description с триггерами) + шаги workflow
 ├── references/     # соглашения и правила, загружаемые по требованию

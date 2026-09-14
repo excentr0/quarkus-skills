@@ -25,7 +25,7 @@ How to build the REST API summary from JAX-RS resource files.
 
 ## Step 3 — Emit the summary
 
-```
+```text
 REST API (order area):
 - GET /orders — list, paginated (page/size query params), returns List<OrderDto>
 - POST /orders — create, body OrderDto (@Valid), returns OrderDto, @Transactional

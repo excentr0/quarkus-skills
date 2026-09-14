@@ -44,7 +44,7 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 | `quarkus-security` | Core security annotations (`@RolesAllowed`, `SecurityIdentity`) |
 | `quarkus-smallrye-openapi` | OpenAPI schema + Swagger UI in dev |
 | `quarkus-jacoco` | JaCoCo coverage (test scope; replaces jacoco-maven-plugin) |
-| `io.quarkiverse.mapstruct:quarkus-mapstruct` | MapStruct support for native builds (Quarkiverse) |
+| `io.quarkiverse.mapstruct:quarkus-mapstruct` | MapStruct support (Quarkiverse): reads `@Mapper`/`@MapperConfig`, makes generated mappers native-safe and dev-mode-recompilable. It does NOT run the MapStruct annotation processor — the build still needs `org.mapstruct:mapstruct-processor` via maven-compiler-plugin `annotationProcessorPaths` (or Gradle `annotationProcessor`). |
 | `quarkus-junit5` / `quarkus-junit5-mockito` | `@QuarkusTest` / `@InjectMock` |
 | `io.rest-assured:rest-assured` | HTTP tests (URL auto-configured in `@QuarkusTest`) |
 
@@ -84,12 +84,18 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   or `PanacheRepositoryBase<Person, Integer>` for a custom ID type. Same query API without statics.
 - Custom ID: extend `PanacheEntityBase` and declare `@Id public Long id;` (or UUID with
   `@GeneratedValue(strategy = GenerationType.UUID)`).
-- PanacheQL: string fragments like `"name = ?1"`, `"ORDER BY name"`; `find("Person.findByName", name)`
-  for named queries. Pagination: `query.page(Page.of(index, size)).list()` (page index starts at 0),
-  `.count()`, `.nextPage()`.
+- PanacheQL: string fragments like `"name = ?1"`, `"ORDER BY name"`; named parameters via
+  `Map.of("name", value)`. Named queries: define with `@NamedQuery(name = "Person.getByName", ...)`
+  and reference with the `#` prefix — `find("#Person.getByName", name)`. Pagination:
+  `query.page(Page.of(index, size)).list()` (page index starts at 0), `.count()`, `.nextPage()`.
 - Writes require `@Transactional` (`jakarta.transaction.Transactional`) on service/resource methods.
 - Reactive (Hibernate Reactive + Panache): same API but returns `Uni<...>`:
   `person.persist()`, `Person.findById(23L)` → `Uni<Person>`, `Person.listAll()` → `Uni<List<Person>>`.
+  Transactions: `@WithTransaction` (`io.quarkus.hibernate.reactive.panache.common.WithTransaction`)
+  or `Panache.withTransaction(...)`. Plain `jakarta.transaction.Transactional` also works on
+  `Uni`-returning methods.
+- Jackson: `com.fasterxml.jackson.databind.ObjectMapper` is a built-in CDI bean (quarkus-jackson,
+  bundled by `quarkus-rest-jackson`) — inject it; customize via `ObjectMapperCustomizer` beans.
 - `equals`/`hashCode` for entities: proxy-safe pattern or id-based; lazy relations must not be touched
   in `toString()`.
 
@@ -127,7 +133,9 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 - Properties (service): `quarkus.oidc.auth-server-url`, `quarkus.oidc.client-id`,
   `quarkus.oidc.credentials.secret`, `quarkus.oidc.token-path` (e.g. `/realms/quarkus/protocol/openid-connect/token`).
 - Path policies: `quarkus.http.auth.permission.<name>.paths=/api/*` and
-  `quarkus.http.auth.permission.<name>.policy=authenticated|permit-all|deny`.
+  `quarkus.http.auth.permission.<name>.policy=authenticated|permit|deny` (three built-in policies;
+  role-based policies via `quarkus.http.auth.policy.<role-policy>.roles-allowed=user,admin` and
+  `.policy=<role-policy>`).
 - Method-level: `@RolesAllowed("admin")`, `@PermitAll`, `@DenyAll` (jakarta.annotation.security);
   user: inject `SecurityIdentity` (io.quarkus.security.identity) or `JsonWebToken`
   (org.eclipse.microprofile.jwt) — `jwt.getSubject()`, `jwt.getClaim("name")`, `idToken` via `@IdToken` (web-app).
@@ -167,7 +175,7 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 
 - Coverage: add `io.quarkus:quarkus-jacoco` (test scope). The extension wires the agent and generates the
   report itself — `./mvnw clean verify`, report at `target/jacoco-report/index.html` (data file
-  `target/jacoco.exec`). Do NOT combine with `jacoco-maven-plugin` without special configuration (double
+  `target/jacoco-quarkus.exec`). Do NOT combine with `jacoco-maven-plugin` without special configuration (double
   instrumentation errors).
 - Mutation testing: `org.pitest:pitest-maven` + `pitest-junit5-plugin` (≥ 1.19.4 required for Quarkus 3.22+;
   pitest ≥ 1.19.4). Run: `mvn org.pitest:pitest-maven:mutationCoverage` (or `pitest` task on Gradle).

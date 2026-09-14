@@ -25,7 +25,7 @@ Entities live in packages like `.domain`, `.entity`, `.model`. Find them:
 
 ## Step 3 — Emit the summary line
 
-```
+```text
 Order (id: Long SEQUENCE, status: OrderStatus, totalAmount: BigDecimal) → has many OrderItem (LAZY) → references Product
 ```
 

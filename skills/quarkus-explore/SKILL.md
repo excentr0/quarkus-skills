@@ -63,7 +63,7 @@ language, and typical Quarkus patterns:
 
 Build a preliminary gap list containing only what is genuinely required:
 
-```
+```text
 ### Predicted involvement:
 - Entities: Order, OrderItem, Customer
 - Repositories: OrderRepository, CustomerRepository
@@ -86,7 +86,7 @@ Tell the user: `Step 1/6: Selecting exploration paths...`
 Read the current conversation context — the user's request, any prior exploration results, remaining
 gaps — and formulate the key exploration goal in one sentence. Show it to the user:
 
-```
+```text
 ### Exploration goal:
 Understand the Order aggregate structure and verify what repositories and mappers already exist.
 ```
@@ -123,7 +123,7 @@ Write out the evaluation explicitly, then produce the final plan from included p
 
 **Example** — for a request "Add a paginated endpoint returning all orders for a customer with order
 items and product names":
-```
+```text
 ### Path evaluation:
 - Build file analysis: INCLUDE — need Quarkus version, extensions, persistence mode
 - List REST resources: INCLUDE — need to check if an orders endpoint already exists
@@ -176,7 +176,7 @@ Using the selected paths from step 1 and the processes described in the loaded r
 single unified numbered plan of file-tool calls to execute in steps 4–5. Each item must be a concrete
 tool call (read path / grep pattern / glob), not a category name.
 
-```
+```text
 ### Unified exploration plan:
 1. read pom.xml
 2. glob src/main/java/**/domain/*.java
@@ -216,7 +216,7 @@ is genuinely valuable for the task — omit noise and obvious defaults.
 
 Structure:
 
-```
+```text
 ### Exploration Report
 
 **Stack:** Java 21 · Quarkus 3.20 · Maven
@@ -273,7 +273,7 @@ Focus on:
 
 Output all assumptions explicitly so they can be validated or corrected:
 
-```
+```text
 ### Implicit assumptions:
 1. The new endpoint should require authentication — all existing endpoints use quarkus-oidc bearer.
 2. Response format should match existing endpoints — camelCase JSON, no wrapper object.
@@ -284,7 +284,7 @@ Output all assumptions explicitly so they can be validated or corrected:
 ```
 
 If no implicit assumptions can be identified — state that explicitly:
-```
+```text
 ### Implicit assumptions: none identified — the request is fully specified.
 ```
 
@@ -299,7 +299,7 @@ Tell the user: `Step 6/6: Evaluating next cycle...`
 Predict the value of an additional cycle (0–100): how critical are the remaining gaps, and are they
 resolvable with file tools? Show score and reasoning:
 
-```
+```text
 ### Additional cycle value: 87/100 → additional exploration cycle required.
 ```
 

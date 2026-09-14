@@ -45,7 +45,7 @@ Skills are **Java-first** (Kotlin variants can be added later).
 
 Each skill is a folder:
 
-```
+```text
 skills/<name>/
 ├── SKILL.md        # entry point: frontmatter (name, description with triggers) + workflow steps
 ├── references/     # conventions and rules loaded on demand
