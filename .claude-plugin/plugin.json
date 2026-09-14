@@ -1,0 +1,9 @@
+{
+  "name": "quarkus-skills",
+  "description": "Best skills for Quarkus development",
+  "version": "0.1.0",
+  "author": {
+    "name": "Mikhail Mishin"
+  },
+  "homepage": "https://github.com/local/quarkus-skills"
+}

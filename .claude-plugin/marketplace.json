@@ -1,0 +1,13 @@
+{
+  "name": "quarkus-skills",
+  "owner": {
+    "name": "Mikhail Mishin"
+  },
+  "plugins": [
+    {
+      "name": "quarkus-skills",
+      "source": "./",
+      "description": "Best skills for Quarkus development"
+    }
+  ]
+}
