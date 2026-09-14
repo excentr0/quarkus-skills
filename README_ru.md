@@ -71,7 +71,7 @@ skills/<name>/
 ## Установка
 
 ```bash
-npx skills add <your-org>/quarkus-skills -g
+npx skills add excentr0/quarkus-skills -g
 ```
 
 Затем откройте Quarkus-проект в агенте и дайте конкретную задачу, например:

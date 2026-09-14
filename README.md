@@ -76,7 +76,7 @@ Skills follow shared principles:
 Install all skills globally into your AI agent:
 
 ```bash
-npx skills add <your-org>/quarkus-skills -g
+npx skills add excentr0/quarkus-skills -g
 ```
 
 Then open a Quarkus project in your agent and give it a concrete task, for example:
