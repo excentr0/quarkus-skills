@@ -92,7 +92,7 @@ fast-jar — say what you are building instead of asking.
 
 ## Step 0 — Read the request (no tools)
 
-Tell the user: `Step 0/5: Reading the request...`
+Tell the user: `Step 0/4: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -104,7 +104,7 @@ signal → fast-jar for the JVM path, and say that native is available if startu
 
 ## Step 1 — Gather context
 
-Tell the user: `Step 1/5: Gathering context...`
+Tell the user: `Step 1/4: Gathering context...`
 
 Read the build file (packaging extensions, `quarkus.native.*`, `quarkus.package.type`), check for the
 container runtime (`command -v docker podman`) if a container path is plausible, and look at what the
@@ -121,7 +121,7 @@ previous build left in `target/` / `build/`. State the findings in three lines:
 
 ## Step 2 — Choose the mode and resolve the command
 
-Tell the user: `Step 2/5: Resolving the build command...`
+Tell the user: `Step 2/4: Resolving the build command...`
 
 Turn the goal + context into one concrete command from [`references/build-modes.md`](references/build-modes.md)
 (and [`references/container-image.md`](references/container-image.md) for image mode). Rules:
@@ -137,7 +137,7 @@ Turn the goal + context into one concrete command from [`references/build-modes.
 
 ## Step 3 — Run the build
 
-Tell the user: `Step 3/5: Building (this may take a while)...`
+Tell the user: `Step 3/4: Building (this may take a while)...`
 
 If your harness supports subagents, delegate the run to ONE subagent and have it return only the
 outcome (exit status, artifact paths, key error lines on failure) — a native build log must not flood
@@ -154,7 +154,7 @@ the conversation. Otherwise run it directly and capture the tail.
 
 ## Step 4 — Verify the artifact and report
 
-Tell the user: `Step 4/5: Reporting the artifact...`
+Tell the user: `Step 4/4: Reporting the artifact...`
 
 Verify the file exists at the expected path before reporting it (see
 [`references/run-output.md`](references/run-output.md) for the path per mode) — a green exit code with

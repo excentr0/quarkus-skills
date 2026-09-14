@@ -20,7 +20,7 @@ What each Quarkus extension in a build file tells you about the project. Read th
 | `quarkus-security` | `@RolesAllowed`, `SecurityIdentity` |
 | `quarkus-smallrye-openapi` | `/q/openapi` schema + Swagger UI in dev |
 | `quarkus-jacoco` | Coverage via `./mvnw clean verify`, report `target/jacoco-report/` |
-| `quarkus-junit5` / `quarkus-junit5-mockito` | `@QuarkusTest` / `@InjectMock` test toolkit |
+| `quarkus-junit5` / `quarkus-junit-mockito` | `@QuarkusTest` / `@InjectMock` test toolkit |
 | `io.quarkiverse.mapstruct:quarkus-mapstruct` | MapStruct mappers compile in native mode too |
 | `quarkus-config-yaml` | `application.yaml` supported |
 | `quarkus-scheduler` / `quarkus-quartz` | Scheduled jobs (`@Scheduled`) |

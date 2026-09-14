@@ -104,5 +104,9 @@ public void post(${entityType} entity) {
 }
 ```
 
+Variables: `${entityType}` — a Panache entity class that is both persisted and sent (Kafka record
+value); for plain-value channels keep `${valueType}` from the sibling examples and drop the
+`persist()` line.
+
 Requires the channel to be configured for transactions; mention it as an advanced option and do not add it
 unless the user asks for exactly-once style delivery.

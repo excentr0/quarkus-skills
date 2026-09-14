@@ -63,7 +63,7 @@ class ${ServiceName}Test {
 
 ## Notes
 
-- `@InjectMock` needs the `quarkus-junit5-mockito` extension (preflight step 3).
+- `@InjectMock` needs the `quarkus-junit-mockito` extension (preflight step 3).
 - The mock replaces the bean application-wide; stubs go in `@BeforeEach` so each test starts clean.
 - Keep stubs to collaborators outside the class under test — mock the HTTP client, not the repository
   whose query the test is meant to exercise.

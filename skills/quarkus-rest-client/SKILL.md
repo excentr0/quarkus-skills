@@ -26,7 +26,7 @@ Detect the project shape from the build files:
 3. **Extensions** — dependencies starting with `io.quarkus:`; feature gates for this skill:
    - `quarkus-rest-client` → declarative REST client (`hasRestClient`)
    - `quarkus-rest-client-jackson` → JSON (de)serialization for client DTOs (`hasRestClientJackson`)
-   - `quarkus-junit5-mockito` → `@InjectMock` available in tests (`hasInjectMock`)
+   - `quarkus-junit-mockito` → `@InjectMock` available in tests (`hasInjectMock`)
    - legacy `quarkus-resteasy-client` → the project uses the RESTEasy Classic client; the
      MicroProfile annotations below are identical, so add new clients to the existing stack
      instead of introducing a second client library (`hasLegacyClient`)
@@ -69,7 +69,7 @@ and a mock-based test.
 | returnTypes | DTO records when the project uses them; `Response` for status-only operations | missing DTOs → delegate to `quarkus-dto-creator` |
 | baseUrl | per environment | `${ENV_VAR}` expansion for env-specific URLs; literal secrets are never committed |
 | scope | project convention (often absent) | add `.scope` only when existing clients set it |
-| tests | mock with `@InjectMock @RestClient` when the task expects tests | requires `quarkus-junit5-mockito` |
+| tests | mock with `@InjectMock @RestClient` when the task expects tests | requires `quarkus-junit-mockito` |
 
 ### Auto-detected (no questions)
 
@@ -208,7 +208,7 @@ Tell the user: `Step 7/8: Writing the test mock...`
 
 1. Read [`examples/mock-test.md`](examples/mock-test.md)
 2. `@InjectMock @RestClient` replaces the client bean application-wide for the test class and
-   requires `quarkus-junit5-mockito`; each test method gets a fresh mock
+   requires `quarkus-junit-mockito`; each test method gets a fresh mock
 3. Stub only the operations the test exercises; assert over HTTP with rest-assured as the project
    does (see [`quarkus-test-writing`](../quarkus-test-writing/SKILL.md))
 4. `@QuarkusIntegrationTest` runs out-of-process: mocking is impossible there — point the config

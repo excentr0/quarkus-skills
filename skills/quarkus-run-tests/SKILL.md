@@ -37,7 +37,7 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import;
    Gradle: `io.quarkus` plugin.
-3. **Test extensions** — `quarkus-junit5` (required for `@QuarkusTest`), `quarkus-junit5-mockito`
+3. **Test extensions** — `quarkus-junit5` (required for `@QuarkusTest`), `quarkus-junit-mockito`
    (`@InjectMock`), `rest-assured` (HTTP assertions), `quarkus-jacoco` (coverage).
 4. **Persistence / messaging extensions** — `quarkus-hibernate-orm-panache`, `quarkus-flyway`,
    `quarkus-messaging-kafka`: with these present a `@QuarkusTest` run starts Dev Services

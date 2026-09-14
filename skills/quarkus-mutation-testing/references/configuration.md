@@ -48,15 +48,15 @@ Then check the `pitest-junit5-plugin` release against the Quarkus floor: ≥ 1.1
     <dependency>
       <groupId>org.pitest</groupId>
       <artifactId>pitest-junit5-plugin</artifactId>
-      <version>${pitestJunit5PluginVersion}</version>
+      <version>$${pitestJunit5PluginVersion}</version>
     </dependency>
   </dependencies>
   <configuration>
     <targetClasses>
-      <param>${targetClasses}</param>
+      <param>$${targetClasses}</param>
     </targetClasses>
     <targetTests>
-      <param>${targetTests}</param>
+      <param>$${targetTests}</param>
     </targetTests>
     <excludedClasses>
       <param>${excludedClasses}</param>
@@ -81,9 +81,9 @@ Then check the `pitest-junit5-plugin` release against the Quarkus floor: ≥ 1.1
 | Variable | Source | Default |
 |----------|--------|---------|
 | `${pitestMavenVersion}` | newest on Central | — (resolve in §2) |
-| `{pitestJunit5PluginVersion}` | newest on Central, ≥ 1.19.4 for Quarkus 3.22+ | — |
-| `{targetClasses}` | project business packages | `org.acme.*` |
-| `{targetTests}` | the fast plain-JUnit test classes | the `*Test` classes that do not boot the app |
+| `${pitestJunit5PluginVersion}` | newest on Central, ≥ 1.19.4 for Quarkus 3.22+ | — |
+| `${targetClasses}` | project business packages | `org.acme.*` |
+| `${targetTests}` | the fast plain-JUnit test classes | the `*Test` classes that do not boot the app |
 | `{excludedClasses}` | `references/exclusions.md` answers | noise globs only |
 | `{excludedMethods}` | `references/exclusions.md` answers | `equals`, `hashCode`, `toString`, `get*`, `set*`, `is*` |
 | `{threads}` | half the available cores | `4` |
@@ -117,9 +117,9 @@ plugins {
 
 pitest {
     pitestVersion = '${pitestVersion}'
-    junit5PluginVersion = '${pitestJunit5PluginVersion}'
-    targetClasses = ['${targetClasses}']
-    targetTests = ['${targetTests}']
+    junit5PluginVersion = '$${pitestJunit5PluginVersion}'
+    targetClasses = ['$${targetClasses}']
+    targetTests = ['$${targetTests}']
     excludedClasses = ['${excludedClasses}']
     excludedMethods = ['${excludedMethods}']
     threads = Runtime.runtime.availableProcessors().intdiv(2) ?: 1

@@ -4,7 +4,7 @@
 |-------------|----------|-------|-----------|
 | quarkus-rest-client | io.quarkus | implementation | always (declarative REST client) |
 | quarkus-rest-client-jackson | io.quarkus | implementation | always (JSON bodies for client DTOs) |
-| quarkus-junit5-mockito | io.quarkus | test | when the client is mocked in tests (`hasInjectMock`) |
+| quarkus-junit-mockito | io.quarkus | test | when the client is mocked in tests (`hasInjectMock`) |
 | rest-assured | io.rest-assured | test | when the test asserts over HTTP |
 
 Preferred way to add a Quarkus extension (updates the build file and resolves the version):
@@ -18,7 +18,7 @@ Preferred way to add a Quarkus extension (updates the build file and resolves th
 implementation("io.quarkus:quarkus-rest-client")
 implementation("io.quarkus:quarkus-rest-client-jackson")
 // test-only:
-testImplementation("io.quarkus:quarkus-junit5-mockito")
+testImplementation("io.quarkus:quarkus-junit-mockito")
 testImplementation("io.rest-assured:rest-assured")
 ```
 
@@ -27,7 +27,7 @@ testImplementation("io.rest-assured:rest-assured")
 implementation 'io.quarkus:quarkus-rest-client'
 implementation 'io.quarkus:quarkus-rest-client-jackson'
 // test-only:
-testImplementation 'io.quarkus:quarkus-junit5-mockito'
+testImplementation 'io.quarkus:quarkus-junit-mockito'
 testImplementation 'io.rest-assured:rest-assured'
 ```
 
@@ -44,7 +44,7 @@ testImplementation 'io.rest-assured:rest-assured'
 <!-- test-only: -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5-mockito</artifactId>
+    <artifactId>quarkus-junit-mockito</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>

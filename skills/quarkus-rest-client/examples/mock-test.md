@@ -51,7 +51,7 @@ class ${TestClassName} {
 | `${jsonPath}` / `${expectedValue}` | test scenario | response assertion |
 
 ## Notes
-- Requires `quarkus-junit5-mockito` (`hasInjectMock` in the preflight).
+- Requires `quarkus-junit-mockito` (`hasInjectMock` in the preflight).
 - `import io.quarkus.test.InjectMock` is the Quarkus 3.x package; on pre-3.0 projects the
   annotation lived in `io.quarkus.test.junit.mockito.InjectMock` — match the import already used
   by the project's tests when a test suite exists.

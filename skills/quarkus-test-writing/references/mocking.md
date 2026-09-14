@@ -2,11 +2,12 @@
 
 ## In @QuarkusTest — @InjectMock
 
-Requires the `quarkus-junit5-mockito` extension.
+Requires the `quarkus-junit-mockito` test dependency (artifact renamed from
+`quarkus-junit5-mockito` in Quarkus 3.31).
 
-- `@InjectMock ${DependencyName} ${dependencyVar};` as a test-class field
-  (import `io.quarkus.test.InjectMock`; requires the `quarkus-junit-mockito` test dependency.
-  The pre-3.x package `io.quarkus.test.junit.mockito.InjectMock` matches only older Quarkus).
+- `@InjectMock ${DependencyName} ${dependencyVar};` as a test-class field, imported from
+  `io.quarkus.test.InjectMock` (the pre-3.x package `io.quarkus.test.junit.mockito.InjectMock`
+  matches only older Quarkus).
 - The mock **replaces the bean application-wide** for the duration of the test class — every injection
   point gets the mock, not just this field.
 - Configure behaviour in `@BeforeEach` with `Mockito.when(...)`; each test method gets a fresh mock.

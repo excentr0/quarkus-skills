@@ -12,6 +12,7 @@ Used by Step 3 and Step 4 of [`../SKILL.md`](../SKILL.md).
 | `${devValue}` / `${testValue}` / `${prodValue}` | Step 4 | value that differs in that profile (omit the line when it does not) |
 | `${ENV_VAR}` | Step 4 | environment variable name for a secret (e.g. `BILLING_CLIENT_SECRET`) |
 | `${envVarFieldName}` | Step 4 | kebab-case key of the secret setting |
+| `${Feature}` | feature/settings group name from the request | `Feature` |
 
 ## Code — shared values, profile overrides, secret reference
 

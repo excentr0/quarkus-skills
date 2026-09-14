@@ -1,8 +1,10 @@
 # Quarkus Skills
 
 **Quarkus Skills** — набор skills для AI-агентов, работающих с Quarkus-приложениями:
-исследование проекта, изменение модели данных на Panache, создание DTO и мапперов,
-добавление REST-ресурсов, настройка security и Kafka, тесты, покрытие и mutation-тестирование.
+исследование проекта, изменение модели данных на Panache, миграции БД, создание DTO
+и мапперов, REST-ресурсы, вызов внешних сервисов через REST-клиенты, конфигурация,
+security и Kafka, сборка, тесты (написание и запуск), checkstyle, покрытие и
+mutation-тестирование.
 
 Набор смоделирован по образцу [Amplicode/spring-skills](https://github.com/Amplicode/spring-skills) —
 тот же формат (`SKILL.md` + `references/` + `examples/`) и та же антигаллюцинаторная дисциплина, —

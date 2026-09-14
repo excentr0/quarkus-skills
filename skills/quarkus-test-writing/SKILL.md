@@ -34,10 +34,10 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import; Gradle: `io.quarkus` plugin.
-3. **Test dependencies** — `quarkus-junit5` (required for `@QuarkusTest`), `quarkus-junit5-mockito`
+3. **Test dependencies** — `quarkus-junit5` (required for `@QuarkusTest`), `quarkus-junit-mockito`
    (`@InjectMock`), `io.rest-assured:rest-assured` (HTTP assertions). Missing ones are added in Step 4:
-   `./mvnw quarkus:add-extension -Dextensions="quarkus-junit5-mockito"` /
-   `./gradlew addExtension --extensions="quarkus-junit5-mockito"`.
+   `./mvnw quarkus:add-extension -Dextensions="quarkus-junit-mockito"` /
+   `./gradlew addExtension --extensions="quarkus-junit-mockito"`.
 4. **Test layout** — glob `src/test/java/**/*.java`: `*Test` classes (surefire / `test` task), `*IT`
    classes (failsafe / `quarkusIntTest` task), plain JUnit classes, `@Tag` usage.
 5. **Test config** — `%test.` keys in `src/main/resources/application.properties`, `@QuarkusTestProfile`

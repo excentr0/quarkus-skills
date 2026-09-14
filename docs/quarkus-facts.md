@@ -185,13 +185,7 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   Target plain business classes; exclude `@QuarkusTest` test classes from `targetTests` (they are slow and
   framework-coupled); keep `targetClasses` scoped to `org.acme.*` business packages.
 
-## 11. Native / container (background)
 
-- Native build: `./mvnw package -Dnative` (requires GraalVM); container image: `quarkus-container-image-*`
-  extensions, `./mvnw package -Dquarkus.container-image.build=true`. Skills should mention `quarkus:build`
-  produces a fast-jar in `target/quarkus-app/` runnable via `java -jar target/quarkus-app/quarkus-run.jar`.
-
----
 
 ## 12. Native / container build (verified details)
 

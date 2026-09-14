@@ -37,7 +37,7 @@ public ${DtoFqn} patch(@jakarta.ws.rs.PathParam("id") ${IdType} id, ${JsonNodeFq
         java.util.Map<String, Object> current = objectMapper.convertValue(${dtoVar}, java.util.Map.class);
         current.putAll(objectMapper.convertValue(patchNode, java.util.Map.class));
         ${dtoVar} = objectMapper.convertValue(current, ${DtoFqn}.class);
-    } catch (${JsonProcessingExceptionFqn} e) {
+    } catch (java.lang.IllegalArgumentException e) {
         throw new jakarta.ws.rs.BadRequestException("Invalid patch payload: " + e.getMessage());
     }
     ${mapperFieldName}.${updateEntityMethodName}(${dtoVar}, ${entityVar});
@@ -58,7 +58,7 @@ public ${DtoFqn} patch(@jakarta.ws.rs.PathParam("id") ${IdType} id, ${JsonNodeFq
 | `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
 | `${updateEntityMethodName}` | mapper method copying DTO into an existing entity | `partialUpdate` |
 | `${JsonNodeFqn}` | Jackson JsonNode FQN, resolved in Step 1 | `com.fasterxml.jackson.databind.JsonNode` |
-| `${JsonProcessingExceptionFqn}` | Jackson exception FQN, resolved in Step 1 | `com.fasterxml.jackson.core.JsonProcessingException` |
+| `${JsonProcessingExceptionFqn}` | Jackson exception FQN (no-DTO variants; the DTO variant catches unchecked `java.lang.IllegalArgumentException`) | `com.fasterxml.jackson.core.JsonProcessingException` |
 
 ## Notes
 - The patched entity is managed inside the transaction — no explicit save call; changes are

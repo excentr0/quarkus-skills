@@ -59,3 +59,10 @@ Migrations run against whatever datasource is active. Keep real datasource setti
 # when the migration tool owns the schema, Hibernate must not manage DDL
 quarkus.hibernate-orm.database.generation=none
 ```
+
+## Variables
+| Variable | Source | Default |
+|----------|--------|---------|
+| `${baselineVersion}` | version of the first migration on an existing schema | `1` |
+| `${DB_USER}` / `${DB_PASSWORD}` | production datasource credentials (env references, never literals) | -- |
+| `${DB_HOST}` / `${DB_NAME}` | production database host/name | -- |

@@ -86,5 +86,5 @@ one-line confirmation:
 ```text
 Conventions: ProductResource in org.acme.product (no .rest segment), base path /api,
 pluralized paths, page=0/size=20, @Transactional on resource methods, NotFoundException on missing,
-DTO records named XxxDto in .dto, MapStruct mapper with toDto/toEntity/updateEntity.
+DTO records named XxxDto in .dto, MapStruct mapper with to${DtoShortName}/toEntity/partialUpdate.
 ```

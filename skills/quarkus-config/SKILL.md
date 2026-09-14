@@ -97,7 +97,7 @@ Never ask a question the user already answered, even implicitly.
 
 ## Step 0 — Read the request
 
-Tell the user: `Step 0/6: Reading the request...`
+Tell the user: `Step 0/5: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -117,7 +117,7 @@ injection style in Step 3.
 
 ## Step 1 — Detect the project's config style
 
-Tell the user: `Step 1/6: Detecting config style...`
+Tell the user: `Step 1/5: Detecting config style...`
 
 From the preflight, score each convention (1–100) and use the project's own style when the score is
 high:
@@ -136,7 +136,7 @@ If the project has no existing config code at all, use the defaults — do not a
 
 ## Step 2 — Choose the config style
 
-Tell the user: `Step 2/6: Choosing the config style...`
+Tell the user: `Step 2/5: Choosing the config style...`
 
 Follow [`references/config-mapping.md`](references/config-mapping.md) for the decision rules:
 
@@ -154,7 +154,7 @@ feature's prefix/name, or a mapping-vs-property disagreement with an existing pr
 
 ## Step 3 — Generate config code and properties
 
-Tell the user: `Step 3/6: Generating configuration...`
+Tell the user: `Step 3/5: Generating configuration...`
 
 Use the matching example files — never write config code from scratch:
 
@@ -175,7 +175,7 @@ Then wire the values into the consuming component:
 
 ## Step 4 — Profiles and secrets
 
-Tell the user: `Step 4/6: Applying profiles...`
+Tell the user: `Step 4/5: Applying profiles...`
 
 Follow [`references/profiles.md`](references/profiles.md):
 
@@ -190,7 +190,7 @@ Follow [`references/profiles.md`](references/profiles.md):
 
 ## Step 5 — Verify the configuration is live
 
-Tell the user: `Step 5/6: Verifying...`
+Tell the user: `Step 5/5: Verifying...`
 
 Prove the values actually reach the application — pick what the project supports:
 

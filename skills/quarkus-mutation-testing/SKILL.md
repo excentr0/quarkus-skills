@@ -93,7 +93,7 @@ Tell the user: `Step 4/4: Recording what was resolved...`
 
 - [ ] The PIT plugin and `pitest-junit5-plugin` versions come from preflight facts (and the ≥ 1.19.4
       floor for Quarkus 3.22+), not from memory of another project.
-- [ ] `targetClasses`/`targetTests` name test classes that actually exist and that PIT can drive —
+- [ ] `targetClasses` (mutated) / `targetTests` (drivers) name classes that actually exist and that PIT can drive —
       re-checked after any exclusion change.
 - [ ] Reported score, threshold and mutant counts are verbatim from `mutations.xml` — never estimated
       from a percentage in an ad-hoc log line.
