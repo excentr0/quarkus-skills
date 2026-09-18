@@ -26,7 +26,7 @@ Detect the project shape from the build files:
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import in `pom.xml`,
    version property `quarkus.platform.version` / `quarkus.version`; Gradle: `io.quarkus` plugin + `quarkusPlatform` version.
 3. **Extensions** — dependencies starting with `io.quarkus:` (and Quarkiverse `io.quarkiverse.*`).
-   See [`../quarkus-explore/references/extension-glossary.md`](../quarkus-explore/references/extension-glossary.md).
+   See [`references/extension-glossary.md`](references/extension-glossary.md).
 4. **Persistence stack** — `quarkus-hibernate-orm-panache` → ORM Panache (sync);
    `quarkus-hibernate-reactive-panache` → reactive Panache (`Uni`-returning); neither → no Panache layer.
 5. **Config files** — the detected `src/main/resources/application.properties` or `.yaml`/`.yml` file, with
@@ -57,8 +57,8 @@ Before asking questions, understand what the user is working on:
 2. **Gather relevant context quickly** — targeted reads only (build file, the 2–3 files the request
    names, package globs). Keep discovery under 30 seconds. If you need conventions for reading entities
    or endpoints, load only the relevant reference:
-   [`../quarkus-explore/references/entity-description.md`](../quarkus-explore/references/entity-description.md),
-   [`../quarkus-explore/references/rest-endpoints.md`](../quarkus-explore/references/rest-endpoints.md).
+   [`references/entity-description.md`](references/entity-description.md),
+   [`references/rest-endpoints.md`](references/rest-endpoints.md).
 
 **CRITICAL: do NOT launch a subagent for exploration and do NOT run the full quarkus-explore
 step 0–6 cycle. The goal is a quick scan, not exhaustive analysis. If more context is needed,

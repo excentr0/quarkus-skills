@@ -187,3 +187,60 @@ idiomatic default and keep Dev Services wiring intact.
 `io.quarkiverse.rabbitmqclient:quarkus-rabbitmq-client` exposes the raw RabbitMQ Java client. This
 skill does not use it; if the user explicitly wants the raw client API rather than Reactive
 Messaging, say so and configure it manually per the Quarkiverse docs.
+
+# Detailed channel configuration workflow
+
+### 4a. Channel configuration
+
+Always write a channel block per direction that the task needs. The **channel name must match the
+`@Incoming`/`@Outgoing`/`@Channel` value** exactly.
+
+Incoming (consumer — mapped to a queue):
+
+```properties
+mp.messaging.incoming.${inChannel}.connector=smallrye-rabbitmq
+```
+
+Outgoing (producer — mapped to an exchange):
+
+```properties
+mp.messaging.outgoing.${outChannel}.connector=smallrye-rabbitmq
+```
+
+Add the following keys **only when they differ from the connector defaults**:
+
+- `.queue.name=${queueName}` (incoming) — only when the queue name differs from the channel name; the
+  connector consumes from the queue named after the channel otherwise.
+- `.exchange.name=${exchangeName}` (outgoing, or incoming when the queue must bind to a differently named
+  exchange) — only when the exchange differs from the channel name.
+- `.exchange.type=${exchangeType}` — only when the user named a non-default type (`topic` is the
+  connector default; `direct`, `fanout`, `headers` are also valid).
+- `.routing-keys=${routingKeys}` (incoming) — comma-separated list the queue is bound to the exchange
+  with; connector default is `#`. Write it when the user named routing keys or the exchange type is
+  `direct` (exact-match keys).
+- `.default-routing-key=${routingKey}` (outgoing) — only when the user names a fixed routing key.
+- **Existing infrastructure** (queue/exchange already provisioned by ops): write
+  `.queue.name=${queueName}` + `.queue.declare=false` (incoming) and
+  `.exchange.name=${exchangeName}` + `.exchange.declare=false` (outgoing).
+
+Rules (all verified — see the checklist):
+
+- **No serializer/deserializer keys exist** — unlike Kafka, the RabbitMQ connector has no
+  `value.serializer`/`value.deserializer` attributes. Never write them. Payload conversion is automatic:
+  `String`/primitives → text; `JsonObject`/`JsonArray`/POJO → JSON; `byte[]` → binary (full table in
+  [`examples/serialization-mapping.md`](../examples/serialization-mapping.md)).
+- **Consumer of a JSON POJO** takes `io.vertx.core.json.JsonObject` and calls `.mapTo(${ValueType}.class)`
+  — do not declare the POJO as the method parameter type (see
+  [`examples/consumer-bean.md`](../examples/consumer-bean.md)).
+- **Broker access**: `rabbitmq-host`, `rabbitmq-port`, `rabbitmq-username`, `rabbitmq-password` are global
+  keys; per-channel equivalents are `host`, `port`, `username`, `password`.
+  **Never write them unprefixed** — it disables Dev Services for RabbitMQ in dev/test. A real broker goes
+  under the production profile: `%prod.rabbitmq-host=${brokerHost}` (plus `%prod.rabbitmq-port=5672` and
+  `%prod.rabbitmq-username`/`%prod.rabbitmq-password` when the broker requires auth). Reuse only an existing non-secret endpoint or environment-variable reference; never copy a redacted username, password, or token.
+- Per-channel `host`/`port` also disable Dev Services when every channel defines them — avoid per-channel
+  broker keys unless the user asks for mixed brokers.
+- Overwrite existing keys in place; never delete unrelated keys or duplicate a key.
+- YAML flavour (`application.yaml` when `quarkus-config-yaml` is present): nest the same keys under
+  `mp.messaging.incoming.<channel>` / `mp.messaging.outgoing.<channel>`.
+- Profile overrides (`%dev.`, `%test.`) are allowed for queue/exchange names; keep broker addresses out
+  of the default profile (see above).

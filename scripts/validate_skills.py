@@ -71,6 +71,46 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str | None, str | None
     return fields, "\n".join(lines[end + 1 :]).strip(), None
 
 
+def _allowed_out_of_skill(candidate: Path) -> bool:
+    """Cross-skill links are allowed only for explicit delegation entry points."""
+    try:
+        relative = candidate.relative_to(ROOT.resolve())
+    except ValueError:
+        return False
+    if str(relative) == "docs/quarkus-facts.md":
+        return True
+    return relative.parent.parent == Path("skills") and relative.name == "SKILL.md"
+
+
+def validate_links(skill_dir: Path, errors: list[str]) -> None:
+    """Check every bundled Markdown link resolves inside its own skill directory."""
+    skill_dir = skill_dir.resolve()
+    for document in sorted(skill_dir.rglob("*.md")):
+        relative = document.relative_to(ROOT)
+        for match in LINK_RE.finditer(document.read_text(encoding="utf-8")):
+            raw_target = match.group(1).strip()
+            if raw_target.startswith("<") and ">" in raw_target:
+                raw_target = raw_target[1 : raw_target.index(">")]
+            else:
+                raw_target = raw_target.split()[0]
+            if not raw_target or raw_target.startswith(("#", "http://", "https://", "mailto:", "//")):
+                continue
+            target = unquote(raw_target.split("#", 1)[0].split("?", 1)[0])
+            if not target:
+                continue
+            candidate = (document.parent / target).resolve()
+            if not candidate.exists():
+                errors.append(f"{relative}: local link does not exist: {raw_target}")
+                continue
+            try:
+                candidate.relative_to(skill_dir)
+            except ValueError:
+                if not _allowed_out_of_skill(candidate):
+                    errors.append(
+                        f"{relative}: local link leaves the skill directory: {raw_target}"
+                    )
+
+
 def validate_skill(path: Path, errors: list[str], warnings: list[str]) -> str | None:
     fields, body, parse_error = parse_frontmatter(path.read_text(encoding="utf-8"))
     relative = path.relative_to(ROOT)
@@ -107,25 +147,7 @@ def validate_skill(path: Path, errors: list[str], warnings: list[str]) -> str | 
                 "(recommended maximum 5000)"
             )
 
-    for match in LINK_RE.finditer(path.read_text(encoding="utf-8")):
-        raw_target = match.group(1).strip()
-        if raw_target.startswith("<") and ">" in raw_target:
-            raw_target = raw_target[1 : raw_target.index(">")]
-        else:
-            raw_target = raw_target.split()[0]
-        if not raw_target or raw_target.startswith(("#", "http://", "https://", "mailto:", "//")):
-            continue
-        target = unquote(raw_target.split("#", 1)[0].split("?", 1)[0])
-        if not target:
-            continue
-        candidate = (path.parent / target).resolve()
-        try:
-            candidate.relative_to(ROOT.resolve())
-        except ValueError:
-            errors.append(f"{relative}: local link escapes repository: {raw_target}")
-            continue
-        if not candidate.exists():
-            errors.append(f"{relative}: local link does not exist: {raw_target}")
+    validate_links(path.parent, errors)
 
     return name or None
 

@@ -167,36 +167,13 @@ Generation correctness is the goal — not UI fidelity.
 
 Tell the user: `Step 0/7: Reading conversation context...`
 
-Before any file read, before any question, **re-read the user's prompt and the prior turns of this
-conversation** and extract whatever is already stated. This step costs nothing and prevents the most
-common failure mode of this skill — asking the user something they already said.
+Before any file read or question, re-read the user's prompt and prior turns and mark every already
+answered input. Read [`references/interaction-workflow.md`](references/interaction-workflow.md) for
+the full context checklist and question matrices before Steps 2–5.
 
-Build a mental checklist of inputs and tick off everything the user has already provided, explicitly
-or implicitly:
-
-| Input | Look for in the prompt / context |
-|---|---|
-| **entity** | a class name (`Order`, `Customer`, `ScheduleTemplate`); "for X"; an open file; a file path; a recently discussed entity in this conversation |
-| **purpose** | "for REST", "for API", "for mapping", "projection", "for service" — drives field selection and the mapper question |
-| **fields** | "all fields", "only id and name", "without password", "with associations", "flat" |
-| **variant** | "record", "plain class", "immutable", "with setters" |
-| **mapper** | "and mapper", "with mapper", "only DTO", "no mapper" |
-| **className** | "name it `OrderSummaryDto`", "class `Foo`" |
-| **package** | "in package `…`", "next to the resource" |
-| **smart defaults** | "use defaults", "all defaults", "default settings", "as usual" |
-| **sub-DTO shape** | "nested", "separate class", "only id", "flat" |
-| **prior project facts** | extensions, persistence mode, DTO style — already known if discussed earlier in this conversation; do not re-fetch |
-
-For every input that is **explicitly or strongly implicitly answered**: mark it as decided and skip the
-corresponding question in Steps 2–7. Do NOT ask "what entity?" if the user wrote "create DTO for
-Order" — `Order` is the answer. Do NOT ask "record or class?" if the user wrote "make a record for
-Order" — record is the answer.
-
-**Only the user's own messages count as user intent.** Assumptions written by the calling agent (task
-descriptions, plans, argument blocks) are not user statements — do not treat them as answers the user
-gave. In particular, do NOT skip asking about sub-DTO shape just because a plan describes one.
-
-Step 0 is mental, not a tool call. Do not announce its details to the user beyond the progress line.
+- **NEVER** ask a question the user already answered, even implicitly.
+- **Exception: `subDtoType` is NEVER decided silently**; confirm it at minimum through the one-line
+  decision protocol unless the user explicitly supplied the shape.
 
 ---
 
@@ -261,39 +238,9 @@ entity source. Back-reference filtering happens in Step 3 / [`references/sub-dto
 
 Tell the user: `Step 3/7: Selecting attributes...`
 
-**Default: include every scalar attribute and every association** (with the sub-DTO defaults from
-[`references/sub-dto.md`](references/sub-dto.md)). Ask only when context signals that the user wants something narrower.
-
-### Decide from context (preferred over asking)
-
-Use the **purpose** captured in Step 0 to pick a sensible default set:
-
-| Purpose signal | Default field set |
-|---|---|
-| "for REST", "for API", "for response" | all scalars + all associations expanded (NEW_NESTED_CLASS for ToMany, FLAT id for ToOne) — the response shape, including related data |
-| "projection", "summary", "list view", "for list" | scalars only, ToOne associations as Flat id, ToMany excluded |
-| "for mapping", "for service", "for storage" | all scalars + all associations expanded |
-| "only id and name" / explicit field list | exactly what the user named, nothing else |
-| no purpose signal | all scalars + all associations expanded (richest reasonable default) |
-
-If the chosen default matches the user's apparent intent, **do not ask**. Just generate. State the
-choice in the one-line confirmation form (principle 2) at most.
-
-### When to ask
-
-Ask only if:
-- the user explicitly said "choose fields" / "ask about fields" / "fine-tune settings", OR
-- the entity has many fields, the purpose signal is ambiguous, AND the user did not say "use defaults".
-
-When asking, use the structured-question tool with `multiSelect: true`:
-
-| Question | Header | Options (first = recommended) |
-|----------|--------|-------------------------------|
-| Which fields to include in DTO `${Entity}Dto`? | Fields | All fields + associations (Recommended) / Scalars only / Only id and name / Specify manually |
-
-For each **association** included, apply the sub-DTO defaults from [`references/sub-dto.md`](references/sub-dto.md). Do NOT ask
-per-association unless the user explicitly requested fine-grained control. Per-field overrides
-(rename, extra/removed validations) live in § Per-field options below and [`references/validation.md`](references/validation.md).
+Before selecting fields, read [`references/interaction-workflow.md`](references/interaction-workflow.md).
+Use the entity purpose and source-derived fields to choose the default set; ask only when the user
+requests a narrower or fine-grained selection. Apply the sub-DTO rules in `references/sub-dto.md`.
 
 ---
 
@@ -301,26 +248,9 @@ per-association unless the user explicitly requested fine-grained control. Per-f
 
 Tell the user: `Step 4/7: Selecting variant...`
 
-Apply the **Decision-making principle** above. The variant is almost always derivable from context —
-explicit asking should be the exception, not the default.
-
-| Context | Action | Variant |
-|---|---|---|
-| Project's existing DTOs are records, user gave no mutability signal | decide silently | [`references/java-record.md`](references/java-record.md) |
-| Project's existing DTOs are plain classes | decide silently (project convention wins) | [`references/java-plain.md`](references/java-plain.md) |
-| User explicitly said "record" | decide silently | [`references/java-record.md`](references/java-record.md) |
-| User explicitly said "plain class" / "mutable" / "with setters" | decide silently | [`references/java-plain.md`](references/java-plain.md) |
-| User explicitly said "Lombok" | see [`references/lombok-note.md`](references/lombok-note.md) — follow the project's existing Lombok style if any; do not invent an annotation set | project style |
-| No signal at all, no existing DTOs in the project | decide silently (record is the Quarkus default) and mention it in the one-line confirmation from principle 2 | [`references/java-record.md`](references/java-record.md) |
-
-Only fall back to the full numbered question when **none** of the rows above matches AND the user has
-not said "use defaults". Even then, prefer the "all variants with the default marked" format from
-principle 3 over an iterative question.
-
-Map the answer to a variant:
-- record → [`references/java-record.md`](references/java-record.md)
-- plain class → [`references/java-plain.md`](references/java-plain.md)
-- Lombok → [`references/lombok-note.md`](references/lombok-note.md)
+Read [`references/interaction-workflow.md`](references/interaction-workflow.md) for the variant
+matrix. Derive record/plain-class/Lombok from project conventions and explicit user intent; ask only
+when no signal remains.
 
 ---
 
@@ -328,9 +258,9 @@ Map the answer to a variant:
 
 Tell the user: `Step 5/7: Confirming variant settings...`
 
-Follow the variant-specific questions from the selected reference file. Only ask if the user did NOT say
-"all defaults". Records need essentially no questions (immutability is built in); plain-class questions
-are batched per [`references/java-plain.md`](references/java-plain.md).
+Read [`references/interaction-workflow.md`](references/interaction-workflow.md) and the selected
+variant reference before asking. Records need no settings questions; batch only unresolved plain-class
+questions, and skip them when the user said "all defaults".
 
 ---
 
@@ -338,68 +268,16 @@ are batched per [`references/java-plain.md`](references/java-plain.md).
 
 Tell the user: `Step 6/7: Generating DTO...`
 
-1. Determine the target path: `src/main/java/${packagePath}/${className}.java`.
+Before writing, read [`references/generation-workflow.md`](references/generation-workflow.md). Follow
+the selected variant's generation order, collision rules, fragment insert points, indentation and
+per-field behavior from that reference.
 
-2. Follow the **Generation Order** from the selected reference file.
-
-3. Before writing, check for a **name collision**: glob/grep the target package for
-   `${className}.java` / `record ${className}` / `class ${className}`. If the name is taken — for the
-   parent DTO ask the user for another name; for a sub-DTO auto-suffix with a number
-   (`${SubDtoName}1`, `${SubDtoName}2`, …) until the name is free.
-
-4. For each generation step:
-
-   **If skeleton (new file):**
-   - read the skeleton `.md` from `examples/_skeletons/`
-   - apply variable substitutions
-   - use the available file-writing tool to create the file
-
-   **If fragment:**
-   - read the fragment `.md` from `examples/_fragments/`
-   - read the Insert Point to know WHERE to insert
-   - use the available file-editing tool to insert code at the specified point
-   - apply variable substitutions
-
-5. Variable substitution rules:
-   - `${packageName}` → detected DTO package or user choice
-   - `${className}` → from the user or the default `${EntityName}Dto`
-   - field-level variables → from the entity source (Step 2)
-   - **NEVER substitute anything not listed in Variables**
-   - **NEVER add imports, methods, or code not in the example**
-   - **FQN handling (CRITICAL):** examples contain FQNs (e.g. `java.util.List`,
-     `jakarta.validation.constraints.NotNull`). When writing the final file, you MUST:
-     1. Replace every FQN in the body with its **short name**
-        (`java.util.List<Integer>` → `List<Integer>`, `@jakarta.validation.constraints.NotNull` → `@NotNull`).
-     2. Collect every FQN you shortened and emit a corresponding `import` line right after the
-        `package` statement, sorted, no duplicates.
-     3. Types from `java.lang` (`String`, `Long`, …) must NOT be imported and must appear as short names.
-     4. Classes from the same package as the DTO must NOT be imported.
-     5. **Javadoc `{@link …}` references — UNIFORM:** generate **short name + import** for **every**
-        shape: top-level class, top-level record, nested static class, nested record, and separate-file
-        sub-DTO (`NEW_CLASS`). There is no asymmetry. Always shorten the entity reference and always add
-        the corresponding `import` line (unless the entity is in the same package).
-     6. **Group imports** in two blocks separated by ONE blank line:
-        - **Block 1** — all third-party / project imports together: `jakarta.*`, `com.fasterxml.*`,
-          `org.hibernate.*`, project packages, etc. (alphabetical inside the block).
-        - **(blank line)**
-        - **Block 2** — `java.*` and `javax.*` (alphabetical).
-        Do NOT split block 1 into per-package sub-blocks.
-     The final file must contain short names in the body (including every Javadoc `{@link …}`) and a
-     clean, grouped import block at the top.
-
-6. For **sub-DTOs** (`subDtoType=NEW_CLASS`): create a separate file by repeating Steps 6.1–6.5
-   recursively for the sub-entity.
-
-7. For **nested classes/records** (`subDtoType=NEW_NESTED_CLASS`): add the inner declaration to the
-   parent DTO file, then fill it following the same fragment rules.
-
-8. **Nested record inside a record parent — MANDATORY:** when the parent DTO is a Java record, every
-   `NEW_NESTED_CLASS` association MUST be emitted as a nested `public record` inside the parent record's
-   body. The skill MUST NOT silently fall back to `NEW_CLASS` (separate file) just because the
-   record-form fragment looks shorter. The full procedure is in [`references/java-record.md`](references/java-record.md) Step 6 and
-   [`examples/_fragments/nested-class/java/nested-class.md`](examples/_fragments/nested-class/java/nested-class.md) ("Java record" variant). If those
-   instructions seem ambiguous to you, that is a bug in this skill — fix the docs, do NOT work around it
-   by changing the `subDtoType`.
+- **NEVER** substitute anything not listed in Variables.
+- **NEVER** add imports, methods, or code not in the example.
+- **FQN handling (CRITICAL):** examples contain FQNs. When writing the final file, you **MUST** shorten
+  them consistently and add the corresponding grouped imports.
+- For `NEW_NESTED_CLASS` in a Java record, the nested declaration **MUST** be a nested `public record`;
+  the skill **MUST NOT** silently fall back to `NEW_CLASS`.
 
 ---
 
@@ -428,50 +306,22 @@ with the DTO and entity information directly — do not ask the user to confirm 
 
 ## Reactive projects
 
-If `persistenceMode = reactive` (`quarkus-hibernate-reactive-panache` in the build):
-
-- The **DTO shape does not change** — the same records/classes, the same generation order.
-- Entity loading APIs return `Uni<...>` (`Order.findById(id)` → `Uni<Order>`), so the conversion happens
-  inside the reactive chain (`map(...)` / `flatMap(...)`) and resource methods return `Uni<OrderDto>`.
-- Mention this in one line when the mapper delegation happens, so the mapper is used in the reactive
-  pipeline rather than on a blocking path.
+Rules for reactive persistence are in
+[`references/generation-workflow.md`](references/generation-workflow.md) § Reactive projects.
 
 ---
 
 ## Indentation
 
-The skill MUST detect the project's indentation style — never hardcode tabs or spaces. Detection order:
-
-1. **`.editorconfig`** at the project root (or any parent of the target file's directory). For Java
-   files, look up the `[*.java]` or `[*]` section and read `indent_style` (`tab` or `space`) and
-   `indent_size` / `tab_width`.
-2. **Sample existing Java files** in the target DTO package (or the nearest ancestor package that
-   contains Java files). Detect whether the leading whitespace on indented lines uses `\t` or spaces, and
-   how many.
-3. **Default to 4-space** if neither source is conclusive.
-
-Whatever style is chosen, apply it **uniformly** to every line of every generated fragment (fields,
-constructors, getters/setters, equals/hashCode, toString, nested classes/records). Never mix tabs and
-spaces inside the same file.
+Detection order and the uniformity rule are in
+[`references/generation-workflow.md`](references/generation-workflow.md) § Indentation.
 
 ---
 
 ## Per-field options
 
-The skill must support the following per-field controls:
-
-- **Field rename** (`fieldNameOverride`): the DTO field name can differ from the entity attribute name.
-  Mapper generation still maps it from the original attribute.
-- **Add validations** (`extraValidations`): add `jakarta.validation` constraints on top of the ones
-  inherited from the entity. The allowed constraints depend on the field type — see
-  [`references/validation.md`](references/validation.md).
-- **Remove inherited validations** (`removedValidations`): drop any constraint that came from the
-  entity field.
-- **Edit annotation parameters** (`message`, `min`, `max`, `regexp`, …): all parameters of every
-  constraint are editable.
-
-These options never appear unless the user explicitly asks for "fine-tune field settings",
-"per-field validation" or similar. By default the skill just inherits everything from the entity.
+The rename/validation/annotation-parameter controls are in
+[`references/generation-workflow.md`](references/generation-workflow.md) § Per-field options.
 
 ---
 

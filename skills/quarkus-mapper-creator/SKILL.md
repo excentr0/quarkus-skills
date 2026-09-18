@@ -305,80 +305,13 @@ user said "I want a different name" or "in a different package".
 
 Tell the user: `Step 4/5: Generating mapper...`
 
-Determine the reference file based on mapper type:
-- MapStruct + Java -> read [`references/mapstruct-java.md`](references/mapstruct-java.md)
-- Custom + Java -> read [`references/custom-java.md`](references/custom-java.md)
+Before generating, read [`references/generation-workflow.md`](references/generation-workflow.md) and
+the selected MapStruct/custom reference. Keep the entity-accessor convention below inline.
 
-Read the corresponding reference file and follow its Generation order exactly.
-
-### Building @Mapping annotations
-
-Read [`references/mapping-annotations.md`](references/mapping-annotations.md) for rules on how to
-build `@Mapping` annotations.
-
-Compare entity fields from `${entityDetails}` with DTO fields from `${dtoFields}`:
-1. Match DTO fields to entity fields by name
-2. For fields with different names, add `@Mapping(source, target)`
-3. For association ID fields (e.g. `customerId` -> `customer.id`), add appropriate mapping
-4. For flat fields (e.g. `customerName` -> `customer.name`), add expression or source.target mapping
-
-### Reading skeleton and fragments
-
-1. Read the skeleton file from `examples/_skeletons/{variant}-java.md`
-2. Apply variable substitutions
-3. Write the file to `src/main/java/${packagePath}/${className}.java`
-4. For each fragment in the generation order:
-   - Check if the fragment's condition is met
-   - Read the fragment from `examples/_fragments/${fragment-name}/java.md`
-   - Apply variable substitutions
-   - Insert/edit into the created file
-
-### Variable substitution rules
-- `${packageName}` -> from Step 1 context or user answer
-- `${className}` -> from user answer or default `${EntityName}Mapper`
-- `${entityClassFqn}` -> entity FQN from context
-- `${dtoClassFqn}` -> DTO FQN from context
-- `${entityParamName}` -> decapitalized entity short name
-- `${dtoParamName}` -> decapitalized DTO short name
-- `${methodName}` -> from naming conventions (see [`references/method-naming.md`](references/method-naming.md))
-- **NEVER substitute anything not listed in the Variables section of the example file**
-- **NEVER add imports, methods, or code not in the example**
-- **FQN handling (CRITICAL):** examples contain FQNs (e.g. `org.mapstruct.Mapper`,
-  `org.mapstruct.Mapping`, `org.mapstruct.ReportingPolicy`,
-  `org.mapstruct.MappingConstants.ComponentModel.CDI`, entity/DTO FQNs). When
-  writing the final file, you MUST:
-  1. Replace every FQN in the body with its **short name**
-     (e.g. `@org.mapstruct.Mapper(...)` -> `@Mapper(...)`,
-     `org.mapstruct.ReportingPolicy.IGNORE` -> `ReportingPolicy.IGNORE`,
-     `${entityClassFqn}` -> entity short name, `${dtoClassFqn}` -> DTO short name).
-  2. Collect every FQN you shortened and emit a corresponding `import` line
-     right after the `package` statement, sorted, no duplicates.
-  3. Classes from the same package as the mapper (entity, DTO if collocated)
-     must NOT be imported — just use the short name.
-  4. Types from `java.lang` must NOT be imported.
-  5. The IDE will NOT optimize imports for you — the file is saved as-is.
-
-### Entity accessors — Panache convention (CRITICAL)
-
-Panache entities declare **public fields**; there are no getters/setters.
-In custom mapper bodies and helper methods use **direct field access**:
-- read: `pet.name`, `pet.type.id` (not `pet.getName()`, not `pet.getType().getId()`)
-- write: `pet.name = ...` (not `pet.setName(...)`)
-- flat collections: `.map(specialty -> specialty.id)` (there is no `getId()` to point a method reference at)
-
-Exception: if the entity source declares `private` fields with getters/setters
-(classic JPA style), use those accessors instead. Decide once from the entity
-source in Step 2 (${entityAccessors}) and stay consistent.
-
-DTO accessors depend on the DTO declaration form:
-- `public record OrderDto(String name, ...)` → component accessors: `orderDto.name()`
-- regular class → getters: `orderDto.getName()`
-
-### Reactive projects
-
-If the project uses `quarkus-hibernate-reactive-panache`, the entity style and
-the mapper code are identical — mapping is synchronous. Call the mapper inside
-the reactive chain (`.map(mapper::toDto)`); never block on it.
+- **NEVER** substitute anything not listed in the Variables section of the example file.
+- **NEVER** add imports, methods, or code not in the example.
+- **FQN handling (CRITICAL):** examples contain FQNs. When writing the final file, you **MUST** shorten
+  them consistently and add sorted, non-duplicate imports while skipping same-package and `java.lang` types.
 
 ---
 
@@ -386,81 +319,10 @@ the reactive chain (`.map(mapper::toDto)`); never block on it.
 
 Tell the user: `Step 5/5: Updating build file...`
 
-For Custom mapper: skip this step entirely. Custom mappers have no
-external dependencies.
-
-For MapStruct: check `${presentDeps}` and add missing pieces to the
-project's build file.
-
-### Required artifacts
-
-| Artifact ID | Group ID | Role |
-|-------------|----------|------|
-| `quarkus-mapstruct` | `io.quarkiverse.mapstruct` | Quarkiverse extension: native-image reflection registration + dev-mode recompilation of mappers |
-| `mapstruct` | `org.mapstruct` | MapStruct annotations API (implementation scope) |
-| `mapstruct-processor` | `org.mapstruct` | annotation processor that generates the mapper implementation |
-
-### Maven: the annotation processor MUST be configured explicitly
-
-The `quarkus-mapstruct` extension only reads `@Mapper`/`@MapperConfig` annotations
-(native registration, dev-mode recompilation) — it does **not** run the MapStruct
-processor. Add it to `maven-compiler-plugin`:
-
-```xml
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <configuration>
-        <annotationProcessorPaths>
-            <path>
-                <groupId>org.mapstruct</groupId>
-                <artifactId>mapstruct-processor</artifactId>
-                <version>${mapstruct.version}</version>
-            </path>
-        </annotationProcessorPaths>
-    </configuration>
-</plugin>
-```
-
-If the project already configures `annotationProcessorPaths`, insert the
-`<path>` entry into the existing list — do not replace other processors
-(Lombok, Quarkus `quarkus-extension-processor`, etc. must survive).
-
-### Gradle
-
-Inside the existing `dependencies { … }` block:
-
-```groovy
-implementation("org.mapstruct:mapstruct:${mapstructVersion}")
-annotationProcessor("org.mapstruct:mapstruct-processor:${mapstructVersion}")
-implementation("io.quarkiverse.mapstruct:quarkus-mapstruct:${quarkusMapstructVersion}")
-```
-
-(Groovy DSL: single quotes / `implementation 'org.mapstruct:mapstruct:…'`.)
-
-### Versions
-
-Do NOT hardcode blindly. In order:
-1. Reuse versions already present in the project (build file, parent POM,
-   `gradle/libs.versions.toml` version catalogue) — MapStruct and its processor
-   must share one version.
-2. If absent: `org.mapstruct:mapstruct` — a current stable line is `1.6.x`
-   (e.g. `1.6.3`), keep `mapstruct` and `mapstruct-processor` in lockstep.
-3. `io.quarkiverse.mapstruct:quarkus-mapstruct` is a Quarkiverse extension, NOT
-   managed by the Quarkus platform BOM — its version must be declared. Check
-   https://quarkus.io/extensions/io.quarkiverse.mapstruct/quarkus-mapstruct/
-   for the current version (1.1.0 at the time of writing) and prefer whatever
-   the project already uses.
-
-Use the available file-editing tool with `${buildFile}` as the target path. Make the
-edit minimally — insert new entries into the existing blocks, do not rewrite
-the file.
-
-### No properties needed
-
-Mapper creation does not write any `application.properties` entries.
-
-Report: "Created mapper ${className} in package ${packageName}. Type: ${mapperType}. Methods: ${list of methods}."
+For Custom mapper, skip this step. For MapStruct, read
+[`references/mapstruct-dependencies.md`](references/mapstruct-dependencies.md) before editing the build.
+The MapStruct annotation processor **MUST** be configured explicitly; versions **MUST** come from the
+project or be verified against the official extension/source before writing them.
 
 ---
 
