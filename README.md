@@ -91,6 +91,13 @@ Explore this project and explain its domain model.
 Add a CRUD REST resource for Customer using DTOs and MapStruct.
 ```
 
+## Local validation
+
+```bash
+python3 scripts/validate_skills.py
+git diff --check
+```
+
 ## License
 
 No explicit license yet — treat as all-rights-reserved until a LICENSE is added.

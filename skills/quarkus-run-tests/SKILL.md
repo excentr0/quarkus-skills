@@ -14,6 +14,9 @@ description: >-
 
 # Run tests
 
+Use [`references/maven.md`](references/maven.md), [`references/gradle.md`](references/gradle.md), and
+[`references/report.md`](references/report.md) for command resolution and compact result reporting.
+
 ## Test types
 
 | Type | Meaning | Typical Maven command | Typical Gradle command |
@@ -21,10 +24,12 @@ description: >-
 | `unit` | plain JUnit 5 — no CDI container, no app boot, no Dev Services | `./mvnw test -Dtest='${pattern}'` | `./gradlew test --tests '${pattern}'` |
 | `quarkus` | `@QuarkusTest` — the application boots in the test JVM; Dev Services start (DB, Kafka, Keycloak) | `./mvnw test` | `./gradlew test` |
 | `integration` | `@QuarkusIntegrationTest` — black-box tests against the packaged artifact (jar, native binary, or container) | `./mvnw verify -DskipITs=false` | `./gradlew quarkusIntTest` |
-| `all` | everything above | `./mvnw clean verify -DskipITs=false` | `./gradlew clean test quarkusIntTest` |
+| `all` | unit and application tests first, then integration tests as a separate phase | `./mvnw clean test`, then `./mvnw verify -DskipITs=false` | `./gradlew clean test`, then `./gradlew quarkusIntTest` |
 
 **Task names are project-specific** — the Gradle column shows the conventional names; discover the
-real ones instead of assuming (see `references/gradle.md`).
+real ones instead of assuming (see [`references/gradle.md`](references/gradle.md)). For `all`, run the
+application test phase first and start the integration phase only after it passes; do not collapse the
+phases into one mixed command.
 
 **Never mix `@QuarkusTest` and `@QuarkusIntegrationTest` in one test run.** Maven: surefire runs the
 former (`test` phase), failsafe runs the latter (`verify` phase, `*IT.java` naming). Gradle: the two
@@ -43,8 +48,7 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
    `quarkus-messaging-kafka`: with these present a `@QuarkusTest` run starts Dev Services
    (Docker required) and database state persists between tests.
 5. **Test layout** — glob `src/test/java/**/*.java`: `*Test`/`*Tests` classes, `*IT` classes
-   (integration), any JUnit 5 `@Tag` usage (used to split types), and the `%test.` profile in
-   `src/main/resources/application.properties`.
+   (integration), any JUnit 5 `@Tag` usage (used to split types), and the `%test.` profile in the detected application config file (`.properties` or YAML).
 
 If there is no Quarkus build file, stop: this skill targets Quarkus projects.
 

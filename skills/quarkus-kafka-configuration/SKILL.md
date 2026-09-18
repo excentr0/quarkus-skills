@@ -2,16 +2,14 @@
 name: quarkus-kafka-configuration
 description: >
   Configures Kafka messaging in a Quarkus application: channel configuration in
-  application.properties and, when needed, generated @Incoming / @Outgoing / @Channel
-  messaging beans. Use this skill when Kafka configuration needs to be created or
-  extended, either standalone or as part of a larger task (e.g. before adding an
-  Emitter producer or an @Incoming consumer).
+  application.properties and, when needed, generated Kafka-specific
+  Reactive Messaging beans (`@Incoming` / `@Outgoing` / `@Channel`). Use this skill when Kafka
+  configuration needs to be created or extended, either standalone or as part of a larger task
+  (e.g. before adding a Kafka `Emitter` producer or consumer).
   Triggers on: "configure kafka", "add kafka", "kafka channel", "kafka topic",
-  "produce to kafka", "consume from kafka", "Emitter", "Reactive Messaging",
-  "@Incoming", "@Outgoing", "message broker".
+  "produce to kafka", "consume from kafka", "smallrye-kafka".
   Russian phrases also trigger this: "настрой kafka", "добавь kafka", "кафка",
-  "канал kafka", "отправка сообщений в kafka", "чтение сообщений из kafka",
-  "брокер сообщений".
+  "канал kafka", "отправка сообщений в kafka", "чтение сообщений из kafka".
 ---
 
 # Kafka Configuration
@@ -25,6 +23,10 @@ Ensures the extension dependency is on the classpath.
 > (e.g. `AskUserQuestion` / `ask_user_question`); fall back to a plain numbered list.**
 > **CRITICAL: Read the conversation context BEFORE running Step 1.** Half the questions in Steps 2–3
 > may already be answered by the user's prompt and prior turns.
+> **CRITICAL: Broker disambiguation.** A request that only says Reactive Messaging, Emitter,
+> `@Incoming`, `@Outgoing`, or message broker is not enough to choose Kafka. Ask one clarifying
+> question to identify the broker before selecting this skill; never choose Kafka or RabbitMQ
+> arbitrarily.
 
 ---
 
@@ -38,7 +40,9 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
 3. **Kafka extension** — `io.quarkus:quarkus-messaging-kafka` in the dependencies. Present or not — Step 4b fixes it.
 4. **Existing wiring** — grep `src/main` for `mp.messaging.` (channel config) and
    `org.eclipse.microprofile.reactive.messaging` (`@Incoming`/`@Outgoing`/`@Channel`).
-5. **Config files** — `src/main/resources/application.properties` (or `.yaml` if `quarkus-config-yaml` is present).
+5. **Config files** — detect `src/main/resources/application.properties` or `.yaml`/`.yml` only when
+   `quarkus-config-yaml` is present. If YAML is selected without that extension or the native YAML
+   structure cannot be handled safely, stop instead of writing properties syntax into it.
 
 ---
 
@@ -60,10 +64,10 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
 
 | Option | Default | Always ask? |
 |---|---|---|
-| `valueType` (producer, i.e. outgoing) | `java.lang.String` | YES — always ask |
-| `valueType` (consumer, i.e. incoming) | symmetric with producer | NO — ask only if the user indicates asymmetry |
+| `path` | `properties` when `@Incoming`/`@Outgoing`/`@Channel` beans already exist, else `beans` | YES — choose first |
+| `valueType` (producer, i.e. outgoing) | `java.lang.String` | YES — only for Path B |
+| `valueType` (consumer, i.e. incoming) | symmetric with producer | NO — only for Path B when asymmetric |
 | `keyType` | none (value-only messages) | NO — only when the user mentions keys |
-| `path` | `properties` when `@Incoming`/`@Outgoing`/`@Channel` beans already exist, else `beans` | YES |
 | `channelName` | `${typeKebab}-in` / `${typeKebab}-out` — `${typeKebab}` = kebab-case value type simple name (`OrderEvent` → `order-event`) | NO |
 | `topic` | channel name (connector default: if `topic` is not set, the channel name is used) | NO |
 | `group.id` | unset → `quarkus.application.name` (connector default) | YES — one question, "keep default" recommended |
@@ -73,8 +77,8 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
 | `language` | Java | NO — this repo's skills are Java-first |
 
 **Smart defaults.** If the user says "use defaults" / "all defaults" / "minimal configuration" → skip every
-`Always ask = NO` question. Only ask the mandatory ones (`valueType` producer, `path`) plus anything the user
-mentioned non-default.
+`Always ask = NO` question and choose the path first. Ask value types only if the selected path is Path B;
+otherwise ask no bean-type questions. Ask anything else the user mentioned non-default.
 
 **Smart answer recognition.** When the user provides a value directly ("publish `OrderEvent`", "consume
 `PaymentEvent`", "group `orders`"), accept it without asking again. Several answers in one message → accept all.
@@ -91,10 +95,10 @@ prior turns, and the user's prompt. Only ask when context yields no clear defaul
    channel names derived from the type, single `application.properties` file.
 2. **Strong signal → one-line confirmation.** State the decision and alternatives; the user can accept
    silently. Used for: reusing an existing messaging bean class, topic names defaulting to channel names.
-3. **No clear default → structured question** with the recommended option first. Used for: `valueType`,
-   `path`, `group.id` (keep-default option first).
-4. **Empty for a critical input → ask plainly.** Producer `valueType`; the handling behavior for a generated
-   consumer (see Step 5).
+3. **No clear default → structured question** with the recommended option first. Choose `path` first;
+   only for Path B ask `valueType` and then `group.id` (keep-default option first).
+4. **Empty for a critical input → ask plainly.** Path B producer `valueType`; the handling behavior for a
+   generated consumer (see Step 5).
 
 ## Step 0 — Conversation context (mental, no tool calls)
 
@@ -122,7 +126,7 @@ Tell the user: `Step 1/6: Gathering context...`
 | Source | Variables extracted |
 |---|---|
 | `pom.xml` / `build.gradle(.kts)` | `buildFile`, `buildTool`, `quarkusVersion`, `presentDeps`, `mainPackage` (from source tree), module list |
-| `application.properties` (read fully) | `existingProps` — all `mp.messaging.*`, `kafka.bootstrap.servers`, `%dev.`/`%prod.` prefixed keys |
+| detected config file (`.properties` or YAML) | `existingProps` — `mp.messaging.*`, `kafka.bootstrap.servers`, and `%dev.`/`%prod.` keys; read the selected format and redact passwords, tokens, auth headers, and credential-bearing URLs before retaining or reporting values |
 | grep `mp\.messaging\.` under `src/main` | `existingChannels` — channel names already configured, with direction |
 | grep `@Incoming\|@Outgoing\|@Channel` under `src/main/java` | `existingMessagingBeans` — class FQNs + file paths + the channel names each one uses |
 
@@ -132,8 +136,8 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 **Derived:**
 - `kafkaExtensionPresent` — `presentDeps` contains `io.quarkus:quarkus-messaging-kafka`. Skip Step 4b if true.
-- `singlePropsFile` — exactly one `application.properties`. Skip the props-file question if true.
-- `existingBootstrapServers` — value of `kafka.bootstrap.servers` or `mp.messaging.<dir>.<ch>.bootstrap.servers` if present, else `null`.
+- `singleConfigFile` — exactly one detected application config file (`.properties`/`.yaml`/`.yml`). Skip the config-file question if true.
+- `existingBootstrapServers` — value of `kafka.bootstrap.servers` or `mp.messaging.<dir>.<ch>.bootstrap.servers` if present, else `null`; redact credentials if an endpoint contains them.
 - `existingGroupId` — value of any `mp.messaging.incoming.<ch>.group.id` if present, else `null`.
 - `existingBeanClasses` — from `existingMessagingBeans`; carries FQN, file path, declared channels. Used in Step 3.
 - `orphanChannels` — channels referenced in code (`@Incoming`/`@Outgoing`/`@Channel`) but absent from
@@ -143,22 +147,25 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 Tell the user: `Step 2/6: Asking all questions...`
 
-Ask everything in a single structured-question call (up to 5 questions). Pre-fill from context, skip
-already-answered:
+Ask the path question first, then ask only the questions that apply to that path. Pre-fill from context
+and skip already-answered:
 
-1. **Producer value type?** — options: `java.lang.String` (Recommended), `java.lang.Integer`,
-   `java.lang.Long`, `java.util.UUID`, `Custom (specify FQN)`
-2. **Consumer value type?** — same options; pre-select the producer answer (symmetric) unless the user
-   indicated otherwise
-3. **Where to put the wiring?** — `application.properties only` (Path A) / `application.properties + messaging bean`
+1. **Where to put the wiring?** — detected config file only (Path A) / detected config file + messaging bean
    (Path B, Recommended when no `@Incoming`/`@Outgoing`/`@Channel` bean exists yet)
+
+If Path A is selected, skip producer/consumer value types and bean-target questions. If Path B is selected, ask:
+
+2. **Producer value type?** — options: `java.lang.String` (Recommended), `java.lang.Integer`,
+   `java.lang.Long`, `java.util.UUID`, `Custom (specify FQN)`
+3. **Consumer value type?** — same options; pre-select the producer answer (symmetric) unless the user
+   indicated otherwise
 4. **Consumer group id?** — `keep connector default (quarkus.application.name)` (Recommended) /
    `specify` (plain value). Pre-fill silently if `existingGroupId` is non-null.
 5. **Channel and topic names?** — only when a name cannot be derived: default channel is
    `${typeKebab}-in` / `${typeKebab}-out`, default topic = channel name. Skip when the user named them.
 
-If the user says "use defaults" — skip type and name questions, default outgoing+incoming types to
-`java.lang.String`, and ask only `valueType` (confirm) + `path`.
+If the user says "use defaults" — choose the path first, skip type questions for Path A, and for Path B
+use `java.lang.String` after confirming the producer value type.
 
 ## Step 3 — Bean target (Path B only)
 
@@ -169,7 +176,7 @@ If `existingBeanClasses` is non-empty, apply Decision principle 2 (one-line conf
 > Project already has messaging code in `${class.fqn}`. Add the new consumer/producer there? (Yes/No)
 
 - **Yes** → `beanTarget = existing`. Reuse the class's `packageName`, `className`, and file path; Step 5
-  appends the method/field with your edit tool instead of creating a file.
+  appends the method/field with the available file-editing tool instead of creating a file.
 - **No (or no existing beans)** → `beanTarget = new`:
   - `className` — default `${ValueType}Messaging` for both directions, `${ValueType}Consumer` for a consumer
     only, `${ValueType}Producer` for a producer only. On file collision append a numeric suffix.
@@ -216,7 +223,8 @@ Rules (all verified — see the checklist):
   channel and the default (`quarkus.application.name`, shared by all consumers) is not intended.
 - **Never write unprefixed `bootstrap.servers`/`kafka.bootstrap.servers`** — it disables Dev Services for Kafka
   in dev/test. A real broker address goes under the production profile:
-  `%prod.kafka.bootstrap.servers=${bootstrapServers}`. Pre-fill silently from `existingBootstrapServers` when present.
+  `%prod.kafka.bootstrap.servers=${bootstrapServers}`. Reuse an existing non-secret endpoint only when it is
+already an environment-variable reference or an explicitly non-secret local endpoint; never copy a redacted credential.
 - **Keys**: `mp.messaging.outgoing.${outChannel}.key.serializer=${keySerializer}` and
   `mp.messaging.incoming.${inChannel}.key.deserializer=${keyDeserializer}` only when `keyType` is set.
 - Overwrite existing keys in place; never delete unrelated keys or duplicate a key.
@@ -234,8 +242,9 @@ If `kafkaExtensionPresent = true`, skip. Otherwise add `io.quarkus:quarkus-messa
 ./mvnw quarkus:add-extension -Dextensions="quarkus-messaging-kafka"
 ```
 
-or add the dependency to the build file directly (Gradle: `implementation("io.quarkus:quarkus-messaging-kafka")`),
-matching the project's existing dependency style (BOM-managed, no `<version>`).
+or add the extension to the detected build file directly (Gradle: `implementation("io.quarkus:quarkus-messaging-kafka")`),
+matching the project's existing dependency style (BOM-managed, no `<version>`). Do not pass ordinary
+non-Quarkus dependencies to the extension command.
 
 ## Step 5 — Generate messaging beans (Path B only)
 
@@ -269,9 +278,9 @@ Match the user's conversation language. Include:
 - Extension: added / already present.
 - Effective defaults stated: topic = channel name (when `.topic` was omitted); `group.id` =
   `quarkus.application.name` (when omitted).
-- How to try it: `./mvnw quarkus:dev` — Dev Services starts a Kafka broker automatically in dev/test because
-  no `bootstrap.servers` is configured (say explicitly if that is not the case, e.g. a `%prod.` address or an
-  existing broker config disables it).
+- How to try it: `./mvnw quarkus:dev` (Maven) or `./gradlew quarkusDev` (Gradle) — Dev Services starts
+  a Kafka broker automatically in dev/test because no `bootstrap.servers` is configured (say explicitly if
+  that is not the case, e.g. a `%prod.` address or an existing broker config disables it).
 - If the consumer body was left as a comment stub — say so and ask what the handling should be.
 - `orphanChannels` that remain unconfigured, if any.
 

@@ -24,10 +24,15 @@ Detect the project shape from the build files:
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import in `pom.xml`,
    version property `quarkus.platform.version` / `quarkus.version`; Gradle: `io.quarkus` plugin + `quarkusPlatform` version.
 3. **Security extensions already present** — `quarkus-oidc` (OIDC), `quarkus-smallrye-jwt` (MP-JWT),
-   `quarkus-security` (core annotations).
-4. **Existing security configuration** — `src/main/resources/application.properties`: `quarkus.oidc.*`,
+   `quarkus-security` (core annotations). Record extension presence separately from ordinary build
+   dependencies; add only the missing Quarkus extensions with the detected Maven/Gradle command.
+4. **Config file and format** — detect `src/main/resources/application.properties` or
+   `application.yaml`/`application.yml`. If YAML is present, verify `quarkus-config-yaml` in the
+   build; if it is missing, **STOP**. If both formats exist, identify the authoritative file or ask
+   before writing. Generate properties syntax only for `.properties`, or nested YAML for YAML.
+5. **Existing security configuration** — read the detected config file for `quarkus.oidc.*`,
    `quarkus.http.auth.*` keys; grep for `@RolesAllowed` / `@Authenticated` in `src/main/java`.
-5. **Persistence stack** — only needed when the user's task also touches entities; security
+6. **Persistence stack** — only needed when the user's task also touches entities; security
    configuration itself does not depend on it.
 
 If the project is not a Quarkus application (no Quarkus BOM/plugin in the build file) — stop and
@@ -206,13 +211,15 @@ Call **file tools** (in parallel where possible). Do NOT call MCP tools.
 |------|----------------|---------------|
 | read the build file (`pom.xml` / `build.gradle` / `build.gradle.kts`) | Quarkus version, security extensions present (`quarkus-oidc`, `quarkus-smallrye-jwt`, `quarkus-security`), build file type, number of modules | quarkusVersion, buildFile, presentExtensions |
 | glob `src/main/resources/application.{properties,yaml,yml}` | path(s) to the config file | propsFile |
-| read the config file | existing `quarkus.oidc.*`, `quarkus.http.auth.*` keys — **redact secret values** | existingAuthConfig |
+| read the detected config file | existing `quarkus.oidc.*`, `quarkus.http.auth.*` keys — **redact secret values** | existingAuthConfig |
 | grep `@Path` in `src/main/java` | resource classes and their base paths | resources |
 | grep `@RolesAllowed`, `@Authenticated`, `@PermitAll`, `@DenyAll` in `src/main/java` | existing annotations and role names in use | existingAnnotations, existingRoles |
 | grep `SecurityIdentity`, `JsonWebToken` in `src/main/java` | existing identity/token injection usage | existingIdentityUsage |
 
 - **Secret redaction:** if any config value looks like a credential (`secret`, `password`,
-  `token`, `key` keys), replace only the value with `[REDACTED]` before it enters the report.
+  `token`, `key` keys), replace only the value with `[REDACTED]` before it enters the report. During
+  verification report only the key, profile, and status (`set`, `missing`, or `not checked`), never
+  the resolved value.
 - If multi-module project (more than one module in the build file): ask which module to use,
   then re-read the module-specific build file and config file.
 - If `existingAuthConfig` is not empty:
@@ -277,7 +284,12 @@ custom mechanism (out of scope — ask instead).
 
 1. Read the variant reference file. Collect: property blocks, annotation fragments, permission rules.
 
-2. Compose the properties from the variant's properties example:
+2. Compose the configuration from the variant's example. Write to the detected config file:
+   use the properties block unchanged for `application.properties`, or translate it into nested YAML
+   for `application.yaml`/`application.yml`. If the selected format cannot be supported safely,
+   stop rather than writing a properties block into a YAML file.
+
+   Compose the properties from the variant's properties example:
    [`oidc-service`](examples/_properties/oidc-service/properties.md),
    [`oidc-web-app`](examples/_properties/oidc-web-app/properties.md), or
    [`smallrye-jwt`](examples/_properties/smallrye-jwt/properties.md):
@@ -333,11 +345,12 @@ Tell the user: `Step 5/5: Adding dependencies and properties...`
      `./gradlew addExtension --extensions="quarkus-oidc"`)
    - **Fallback:** edit the build file directly using the Maven/Gradle block from the dependency example file
 3. Read the variant-specific properties example (linked in Step 4)
-4. Write/append to the application properties file found in Step 1 — merge with existing keys,
-   never duplicate a key, keep unrelated keys untouched
+4. Write/append to the config file found in Step 1 — merge with existing keys, never duplicate a
+   key, keep unrelated keys untouched. Report only key names, profiles, and verification status;
+   redact any resolved secret as `[REDACTED]`.
 5. Quarkus reloads configuration on the next dev-mode start — there is no build-model refresh step.
    Tell the user to restart `quarkus:dev` / `quarkusDev` after adding an extension.
-6. Report: "Added dependencies: [list]. Wrote to application.properties: [keys]. Added permissions: [rules]."
+6. Report: "Added extensions: [list]. Wrote to [detected config file]: [keys]. Added permissions: [rules]."
 7. If the generated properties contain the `${OIDC_CLIENT_SECRET}` placeholder, list it explicitly
    and instruct the user to set the environment variable before running the app (shell `export`,
    IDE run configuration, or a deployment secret store). **Never ask the user for the secret value

@@ -34,13 +34,15 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import; Gradle: `io.quarkus` plugin.
-3. **Test dependencies** — `quarkus-junit5` (required for `@QuarkusTest`), `quarkus-junit-mockito`
-   (`@InjectMock`), `io.rest-assured:rest-assured` (HTTP assertions). Missing ones are added in Step 4:
-   `./mvnw quarkus:add-extension -Dextensions="quarkus-junit-mockito"` /
+3. **Test dependencies** — Quarkus extensions `quarkus-junit5` (required for `@QuarkusTest`)
+   and `quarkus-junit-mockito` (`@InjectMock`), plus the ordinary test library
+   `io.rest-assured:rest-assured` for HTTP assertions. Use `add-extension` only for the Quarkus
+   extensions; add Rest Assured as a test-scoped Maven/Gradle dependency when it is missing.
+   For example, `./mvnw quarkus:add-extension -Dextensions="quarkus-junit-mockito"` /
    `./gradlew addExtension --extensions="quarkus-junit-mockito"`.
 4. **Test layout** — glob `src/test/java/**/*.java`: `*Test` classes (surefire / `test` task), `*IT`
    classes (failsafe / `quarkusIntTest` task), plain JUnit classes, `@Tag` usage.
-5. **Test config** — `%test.` keys in `src/main/resources/application.properties`, `@QuarkusTestProfile`
+5. **Test config** — `%test.` keys in the detected application config file (`.properties` or YAML), or `@QuarkusTestProfile`
    classes under `src/test/java`.
 
 If there is no Quarkus build file, stop: this skill targets Quarkus projects.
@@ -89,6 +91,9 @@ Extract from the request: **what** to test (class, endpoint, method), **which be
 ## Step 1 — Detect existing test conventions
 
 Tell the user: `Step 1/6: Detecting test conventions...`
+
+Use [`references/conventions.md`](references/conventions.md) for project style and
+[`references/mocking.md`](references/mocking.md) for CDI/unit-test mock boundaries.
 
 Read the project's existing tests (`src/test/java`, pick 2–3 representative classes) and score each
 convention (1–100). For anything below 80 — ask in Step 2's batch; for anything absent from the code
@@ -150,10 +155,13 @@ test.
 
 Tell the user: `Step 4/6: Checking dependencies and test config...`
 
-- Missing test dependency → add via the extension command from the preflight (never edit a version by hand).
+- Missing Quarkus test extension → add via the detected build tool's extension command (never edit a
+  version by hand). Missing ordinary libraries such as `io.rest-assured:rest-assured` → add as a
+  test-scoped dependency in the existing Maven/Gradle build syntax (`<scope>test</scope>` for Maven,
+  `testImplementation(...)` for Gradle); never pass them to `add-extension`.
 - `@QuarkusIntegrationTest` present but no failsafe configured → the integration tests will not run under
   `./mvnw verify`; note it to the user (running is `quarkus-run-tests`' job).
-- Test-only config → `%test.` keys in `application.properties` (e.g. datasource overrides); a whole variant
+- Test-only config → `%test.` keys in the detected application config file (e.g. datasource overrides); a whole variant
   profile → a `@QuarkusTestProfile` class with `getConfigOverrides()`.
 - Never point `%test.` at production services: Dev Services should own infra in tests.
 

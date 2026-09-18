@@ -5,8 +5,7 @@ description: >
   build system, Quarkus version, extensions, CDI beans, Panache entities and
   repositories, REST resources, configuration, and tests.
   Triggers on explicit requests: "explore project", "describe project", "project overview",
-  "what is this project", "project structure", "tech stack", "give me context about the project",
-  or whenever you need to understand the project before starting any task.
+  "what is this project", "project structure", "tech stack", "give me context about the project".
   Russian phrases also trigger this: "изучи проект", "опиши проект", "структура проекта",
   "контекст проекта", "что за проект".
 ---

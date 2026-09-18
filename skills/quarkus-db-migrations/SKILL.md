@@ -27,11 +27,16 @@ Detect the project shape from the build files:
    **never switch the tool**.
 5. **Existing naming convention** — list the migration file names and derive the pattern:
    version style (`V1__` vs `V1.0.0__`), separator, description style (`snake_case` vs `camelCase`).
-   The next file MUST match the existing convention exactly.
-6. **Persistence & datasource** — `quarkus-hibernate-orm-panache` / `quarkus-hibernate-reactive-panache`;
-   db kind from `quarkus.datasource.db-kind` or the `quarkus-jdbc-*` / `quarkus-reactive-*-client`
-   dependency; whether `%prod.` datasource config exists; whether Hibernate schema generation is on
-   (`quarkus.hibernate-orm.database.generation`).
+   The next file MUST match the existing convention exactly. Use the detailed rules in
+   [`references/conventions.md`](references/conventions.md), [`references/flyway.md`](references/flyway.md),
+   and [`references/liquibase.md`](references/liquibase.md) when the detected tool requires them.
+6. **Config file and persistence** — detect `application.properties` or `application.yaml`/`application.yml`.
+   If YAML is present, verify `quarkus-config-yaml` in the Maven/Gradle build; if it is missing, **STOP**.
+   If both formats exist, identify the authoritative file or ask before writing. Use properties syntax only
+   for `.properties`, and nested YAML for YAML. Then detect `quarkus-hibernate-orm-panache` /
+   `quarkus-hibernate-reactive-panache`; db kind from `quarkus.datasource.db-kind` or the
+   `quarkus-jdbc-*` / `quarkus-reactive-*-client` dependency; whether `%prod.` datasource config exists;
+   whether Hibernate schema generation is on (`quarkus.hibernate-orm.database.generation`).
 
 If the project is not a Quarkus application (no Quarkus BOM/plugin in the build file) — stop and
 tell the user this skill targets Quarkus projects.
@@ -140,8 +145,8 @@ Read-only discovery; do not write anything yet:
 1. Build file → `hasFlyway` / `hasLiquibase` (preflight).
 2. Glob `src/main/resources/db/**` → migration files with their exact names.
 3. Derive the next version and the naming pattern from those names.
-4. `application.properties` → existing `quarkus.flyway.*` / `quarkus.liquibase.*` keys,
-   datasource keys, `%prod.` prefixes (redact secrets).
+4. The detected config file → existing `quarkus.flyway.*` / `quarkus.liquibase.*` keys, datasource
+   keys, `%prod.` prefixes (redact secrets; report only key, profile, and status).
 5. Entity files for the affected tables → mapped `@Table(name=...)` / `@Column(name=...)`,
    JDBC types, nullability.
 
@@ -177,11 +182,12 @@ extension). Never set up both tools.
 
 Tell the user: `Step 3/6: Adding the migration extension...`
 
-Use the snippets in [`examples/dependencies.md`](examples/dependencies.md). Prefer the extension
-command so the build file stays consistent:
+Use the snippets in [`examples/dependencies.md`](examples/dependencies.md). For a missing Quarkus
+extension, use the command matching the detected build tool so the build file stays consistent:
 
 ```bash
 ./mvnw quarkus:add-extension -Dextensions="quarkus-flyway"
+./gradlew addExtension --extensions="quarkus-flyway"
 ```
 
 The JDBC driver for the project's db kind must already be present (`quarkus-jdbc-*`) — the migration
@@ -212,9 +218,11 @@ variant matching the db kind and the change type, and fill the `${variables}`.
 
 ## Step 5 — Wire the configuration
 
-Tell the user: `Step 5/6: Updating application.properties...`
+Tell the user: `Step 5/6: Updating the detected config file...`
 
-Use [`examples/properties.md`](examples/properties.md):
+Use [`examples/properties.md`](examples/properties.md) for `.properties`; translate its keys into
+nested YAML for `.yaml`/`.yml`. If the format or authoritative file is unresolved, stop instead of
+writing the wrong syntax:
 
 - `quarkus.flyway.migrate-at-start=true` (or the Liquibase equivalent) — the Quarkus way to run
   migrations on startup.
@@ -234,10 +242,13 @@ Tell the user: `Step 6/6: Verifying...`
 
 Prove the migration applies — do not report success on "file written" alone:
 
-1. Run the project's tests once (`./mvnw test`) or start dev mode briefly — Dev Services starts a
-   database and the migration runs at startup. Running tests is covered by
-   [`../quarkus-run-tests/SKILL.md`](../quarkus-run-tests/SKILL.md).
-2. Check the run output for migration errors (bad SQL, missing table, wrong version order).
+1. Run the project's tests once with its detected build tool — Maven `./mvnw test` or Gradle
+   `./gradlew test` — or start dev mode briefly — Maven `./mvnw quarkus:dev` or Gradle
+   `./gradlew quarkusDev`. Dev Services starts a database and the migration runs at startup. Running
+   tests is covered by [`../quarkus-run-tests/SKILL.md`](../quarkus-run-tests/SKILL.md).
+2. Check the run output for migration errors (bad SQL, missing table, wrong version order). Never
+   print datasource passwords, tokens, or other secret values; report only the key/profile/status and
+   use `[REDACTED]` for any value that appears in output.
 3. If the target database already contains the schema, apply the baseline decision from the Defaults
    (never run migrations blindly against a populated database).
 

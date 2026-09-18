@@ -22,14 +22,16 @@ Detect the project shape from the build files and configuration:
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import in `pom.xml`;
    Gradle: `id("io.quarkus")` plugin. Quarkus 3.x targets Jakarta EE (`jakarta.*`) — never `javax.*`.
-3. **Config file** — `src/main/resources/application.properties`. If it is absent but
-   `application.yaml`/`application.yml` exists, the `quarkus-config-yaml` extension is in use: the
-   keys are the same, but this skill's examples are `.properties` blocks — translate them into the
-   project's YAML file, keeping the key names identical.
+3. **Config file and format** — detect `src/main/resources/application.properties` or
+   `application.yaml`/`application.yml` and record the actual file. If YAML is present, verify that
+   the `quarkus-config-yaml` extension is present in the Maven/Gradle build; if it is missing, **STOP**
+   and explain that the format cannot be used safely yet. If both formats exist, identify the
+   authoritative file from the project's existing configuration or ask before writing. Use properties
+   syntax only for `.properties`; translate matching examples into nested YAML for `.yaml`/`.yml`.
 4. **Existing config style** — grep `@ConfigMapping` and `@ConfigProperty` in `src/main/java`.
    Record: which style the project already uses, the package config classes live in (`config`,
    `configuration`, or a feature package), and whether nested groups / `@WithDefault` are used.
-5. **Existing custom prefix** — scan non-`quarkus.*`/non-`mp.*` keys in `application.properties`
+5. **Existing custom prefix** — scan non-`quarkus.*`/non-`mp.*` keys in the detected config file
    (e.g. `app.*`, `order.*`): the project's own namespace. A new feature should follow it.
 6. **Profiles in use** — which of `%dev.`, `%test.`, `%prod.` prefixes already appear, and for what
    (datasource, security, messaging).
@@ -69,7 +71,7 @@ profile-specific values.
 | Option | Source |
 |--------|--------|
 | buildTool | build file (preflight) |
-| configFile | `application.properties` or YAML (preflight) |
+| configFile | detected `.properties`, `.yaml`, or `.yml` file (preflight) |
 | configStyle of the project | `@ConfigMapping` / `@ConfigProperty` usage in `src/main/java` (preflight) |
 | prefix / package | existing custom keys and config classes (preflight) |
 
@@ -156,6 +158,11 @@ feature's prefix/name, or a mapping-vs-property disagreement with an existing pr
 
 Tell the user: `Step 3/5: Generating configuration...`
 
+Write to the config file selected in preflight. Use the properties examples unchanged for
+`application.properties`; for `application.yaml`/`application.yml`, translate each key into the
+corresponding nested YAML structure. If the YAML extension or an unambiguous authoritative file is
+missing, stop and explain instead of writing properties syntax into the wrong file.
+
 Use the matching example files — never write config code from scratch:
 
 | What | Example |
@@ -184,7 +191,8 @@ Follow [`references/profiles.md`](references/profiles.md):
   external URLs (so Dev Services keep working in dev/test), `%test.` for test-only overrides.
 - **Secrets are environment variable references** (`${ENV_VAR}`), never literal values — including in
   `%prod.` blocks.
-- Mention in the report which keys are profile-specific and which are shared.
+- Mention in the report which keys are profile-specific and which are shared. Report only key names,
+  profiles, and status; never echo resolved secret values (use `[REDACTED]`).
 
 ---
 
@@ -194,15 +202,16 @@ Tell the user: `Step 5/5: Verifying...`
 
 Prove the values actually reach the application — pick what the project supports:
 
-- **Tests** — run the project's test suite (or the narrowest matching test) and check the injected
-  values are used: `./mvnw test -Dtest='${TestClass}'`.
-- **Dev mode** — start `./mvnw quarkus:dev` and observe the value in the startup log or the endpoint
-  response that uses it; stop dev mode afterwards.
+- **Tests** — run the narrowest matching test with the detected build tool: Maven
+  `./mvnw test -Dtest='${TestClass}'` or Gradle `./gradlew test --tests '${TestClass}'`.
+- **Dev mode** — start `./mvnw quarkus:dev` (Maven) or `./gradlew quarkusDev` (Gradle) and observe
+  the value in the startup log or endpoint response; stop dev mode afterwards.
 - **Negative check** — for a required (non-Optional, no-default) setting, removing it must fail
   startup with a configuration error. Do not invent a different failure message; quote what is observed.
 
-Report the observed values (or the exact reason verification was skipped — e.g. no test for the
-feature and dev mode unavailable). Never claim a value is live without having seen it.
+Report only the key, profile, and verification status (`set`, `missing`, or `not checked`). Never output
+resolved values; redact any secret as `[REDACTED]`. If verification was skipped, state the exact reason.
+Never claim a value is live without having seen its status.
 
 ---
 

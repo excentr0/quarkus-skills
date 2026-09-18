@@ -1,6 +1,10 @@
 .idea
 *.iml
 .DS_Store
+__pycache__/
+*.pyc
 
+docs/plans/
+skills/*-workspace/
 .rabbitmq-skill-workspace/
 .quarkus-opentelemetry-configuration-workspace/

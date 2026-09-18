@@ -20,8 +20,9 @@ protocol `http/protobuf`) as runtime override properties.
 
 ## 2. Jaeger (manual docker)
 
-**Write NO endpoint properties** — the default OTLP endpoint (`localhost:4317`) already matches the
-container. Give the user the command:
+**Write endpoint properties only after checking the exact Quarkus version and collector protocol.**
+Omit them only when the verified default endpoint and protocol match the container; otherwise write an
+explicit endpoint together with its matching protocol. Give the user the command:
 
 ```bash
 docker run --rm -it -p 16686:16686 -p 4317:4317 -p 4318:4318 jaegertracing/jaeger:latest
@@ -60,17 +61,17 @@ keys under `%dev.`:
 | Variable | Source | Default |
 |----------|--------|---------|
 | `${collectorUrl}` | user input (plain free-form question) | no default — never invent a URL |
-| `${collectorProtocol}` | user input | `grpc` (port 4317) on Quarkus 3.33 LTS; `http/protobuf` (port 4318) on newer Quarkus |
+| `${collectorProtocol}` | user input or exact-version lookup | no generic default — resolve the protocol and matching port from the project's Quarkus version |
 
 ## Rules
 
 - **Endpoint and protocol are written together, with the port matching the protocol:**
-  `grpc` ↔ 4317, `http/protobuf` ↔ 4318. The default protocol flips between Quarkus versions
-  (`grpc` on 3.33 LTS, `http/protobuf` on newer), so never rely on it when writing an endpoint.
+  `grpc` ↔ 4317, `http/protobuf` ↔ 4318. Defaults are version-scoped; check the exact project
+  version before relying on one and never infer it from “newer Quarkus”.
 - **Never write an unprefixed OTLP endpoint** when the LGTM Dev Service is in play — an explicit
   endpoint overrides the Dev Service's injected endpoint and breaks dev-mode export.
   Production addresses belong under `%prod.` (same discipline as broker addresses in the
   Kafka/RabbitMQ skills).
 - Optional exporter extras (all verified keys): `quarkus.otel.exporter.otlp.headers=key1=value1,key2=value2`
-  (e.g. `authorization=Bearer my_secret`), `quarkus.otel.exporter.otlp.timeout=10s` (default),
+  (e.g. `authorization=Bearer ${OTLP_AUTH_TOKEN}`), `quarkus.otel.exporter.otlp.timeout=10s` (default),
   `quarkus.otel.exporter.otlp.compression=gzip` (default: unset = disabled). Write only when the user asks.

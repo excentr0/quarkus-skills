@@ -3,9 +3,9 @@
 ## Default (nothing to write)
 
 Traces are **enabled by default** the moment `quarkus-opentelemetry` is on the classpath:
-sampler `parentbased_always_on` (100% of requests), propagators `tracecontext,baggage`,
-OTLP export to `http://localhost:4317` (protocol `grpc` on Quarkus 3.33 LTS; newer Quarkus
-defaults to `http/protobuf` / port 4318). Write nothing unless one of the optional blocks applies.
+sampler `parentbased_always_on` (100% of requests) and propagators `tracecontext,baggage`. The exact
+OTLP endpoint/protocol default is version-scoped; check the project's Quarkus version and the verified
+reference before relying on it. Write nothing unless one of the optional blocks applies.
 
 `service.name` comes from `quarkus.application.name` (default: the artifactId); `service.version`
 from the artifact version. Do not write them into `quarkus.otel.resource.attributes` unless the user

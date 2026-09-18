@@ -47,13 +47,13 @@ If there is no Quarkus build file, stop: this skill targets Quarkus projects.
 
 ## Build modes
 
-| Mode | What you get | Typical Maven command |
-|---|---|---|
-| **fast-jar** (default) | `target/quarkus-app/` — a directory layout started by `quarkus-run.jar` | `./mvnw quarkus:build` |
-| **uber-jar** | one runnable fat jar `target/*-runner.jar` | `./mvnw package -Dquarkus.package.type=uber-jar` |
-| **native** | native executable `target/*-runner` (GraalVM/Mandrel) | `./mvnw package -Dnative` |
-| **native, container build** | native executable built inside a builder container (no local GraalVM needed) | `./mvnw package -Dnative -Dquarkus.native.container-build=true` |
-| **container image** | OCI image in the local registry/daemon | `./mvnw package -Dquarkus.container-image.build=true` |
+| Mode | What you get | Maven command | Gradle command |
+|---|---|---|---|
+| **fast-jar** (default) | `target/quarkus-app/` — a directory layout started by `quarkus-run.jar` | `./mvnw quarkus:build` | `./gradlew quarkusBuild` |
+| **uber-jar** | one runnable fat jar `target/*-runner.jar` | `./mvnw package -Dquarkus.package.type=uber-jar` | `./gradlew build -Dquarkus.package.type=uber-jar` |
+| **native** | native executable `target/*-runner` (GraalVM/Mandrel) | `./mvnw package -Dnative` | `./gradlew build -Dquarkus.native.enabled=true` |
+| **native, container build** | native executable built inside a builder container (no local GraalVM needed) | `./mvnw package -Dnative -Dquarkus.native.container-build=true` | `./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` |
+| **container image** | OCI image in the local registry/daemon | `./mvnw package -Dquarkus.container-image.build=true` | `./gradlew build -Dquarkus.container-image.build=true` |
 
 Exact per-tool commands (Gradle, Quarkus CLI, combined native + container, builder-image pinning) are
 in [`references/build-modes.md`](references/build-modes.md) — copy from there, never reconstruct from

@@ -452,7 +452,7 @@ Do NOT hardcode blindly. In order:
    for the current version (1.1.0 at the time of writing) and prefer whatever
    the project already uses.
 
-Use the project's edit tool with `${buildFile}` as the target path. Make the
+Use the available file-editing tool with `${buildFile}` as the target path. Make the
 edit minimally — insert new entries into the existing blocks, do not rewrite
 the file.
 

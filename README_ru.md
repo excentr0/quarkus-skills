@@ -78,3 +78,10 @@ npx skills add excentr0/quarkus-skills -g
 
 Затем откройте Quarkus-проект в агенте и дайте конкретную задачу, например:
 «Добавь CRUD REST-ресурс для Customer с DTO и MapStruct».
+
+## Локальная проверка
+
+```bash
+python3 scripts/validate_skills.py
+git diff --check
+```

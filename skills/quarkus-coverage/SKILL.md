@@ -13,6 +13,9 @@ description: >-
 
 # Coverage
 
+Use [`references/maven.md`](references/maven.md) or [`references/gradle.md`](references/gradle.md)
+for command snippets and [`references/report.md`](references/report.md) for result extraction.
+
 ## What to cover
 
 Coverage is measured from **the tests that actually ran** — the extension records what executed. So
@@ -82,7 +85,8 @@ e.g. `AskUserQuestion` / `ask_user_question`; a numbered list is the fallback) a
 
 Tell the user: `Step 2/5: Resolving the coverage command...`
 
-Follow `references/maven.md` or `references/gradle.md` to build one command:
+Follow [`references/maven.md`](references/maven.md) or [`references/gradle.md`](references/gradle.md)
+to build one command:
 
 - Whole project → a clean build+verify run (see the stale-report guard below).
 - One group → the same build with the test scope narrowed (`-Dtest` / `--tests` / a tag filter).
@@ -98,7 +102,7 @@ Tell the user: `Step 3/5: Measuring coverage...`
 
 If your harness supports subagents, delegate the run + result collection to ONE subagent; otherwise
 run directly. Coverage-build output is long and noisy — the runner's only job is the report defined in
-`references/report.md`.
+[`references/report.md`](references/report.md).
 
 **Stale-report guard (required).** Coverage is read from a report file that survives a failed run, so a
 failing test would otherwise hand back the PREVIOUS run's number. Before running, either:

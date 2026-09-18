@@ -52,7 +52,8 @@ Parse per `references/report.md`.
 A full picture of everything that ran (all test tasks):
 
 ```bash
-./gradlew test quarkusIntTest   # when the project has both
+./gradlew test                    # first, when the project has both
+./gradlew quarkusIntTest           # only after test passes
 ```
 
 ## 5. Remember the mapping
@@ -64,7 +65,7 @@ otherwise a short note in the conversation. Example shape:
 Gradle test tasks (resolved <YYYY-MM-DD>):
 - quarkus        -> ./gradlew test
 - integration    -> ./gradlew quarkusIntTest
-- all            -> ./gradlew clean test quarkusIntTest
+- all            -> ./gradlew clean test, then ./gradlew quarkusIntTest
 - order module / quarkus -> ./gradlew :order-service:test
 ```
 

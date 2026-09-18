@@ -28,7 +28,9 @@ Detect the project shape from the build files:
 4. **Persistence mode** — if `hasSyncPanache` → proceed. If only `hasReactivePanache` →
    **STOP and ask the user**: this skill's examples are synchronous, and no `Uni`-returning CRUD
    examples exist here — do not improvise reactive code. If both are present, ask which
-   persistence mode this resource should use.
+   persistence mode this resource should use. If `quarkus-hibernate-orm` is present without
+   `quarkus-hibernate-orm-panache`, or neither Panache extension is present, **STOP** and explain
+   that this skill requires synchronous Panache; do not add Panache silently.
 5. **Language** — this skill generates **Java** only. If the resource must be Kotlin — STOP and
    tell the user (no Kotlin examples exist in this skill).
 
@@ -441,7 +443,7 @@ Apply variable substitutions:
 - `{className}` --> resourceName
 - `{requestPath}` --> basePath + resourcePath
 
-Use the **Write** tool to create `src/main/java/{package-path}/{resourceName}.java`.
+Use the available file-writing tool to create `src/main/java/{package-path}/{resourceName}.java`.
 
 ### 5.2 Add bean injection (WA2)
 
@@ -451,7 +453,7 @@ Add a constructor parameter for the repository. If DTO with mapper: also inject 
 If PATCH or PATCH_MANY is selected: also inject the Jackson `ObjectMapper` bean
 (`${ObjectMapperFqn}` resolved in Step 1).
 
-Use the **Edit** tool to modify the resource class.
+Use the available file-editing tool to modify the resource class.
 
 ### 5.3 Add CRUD methods (WA3–WA10)
 
@@ -479,13 +481,13 @@ For each method in `selectedMethods` (from Step 4 method selection):
    4. Types from `java.lang` must NOT be imported
    5. FQNs that cannot be shortened unambiguously (same simple name from different packages) keep the FQN form
 
-6. Use the **Edit** tool to insert the method into the resource class body
+6. Use the available file-editing tool to insert the method into the resource class body
 
 ### 5.4 Create repository if missing (WA11)
 
 Only when Step 3 found no repository for the entity and the user agreed to create one:
 
-Read `examples/_beans/repository/java.md`. Use the **Write** tool to create
+Read `examples/_beans/repository/java.md`. Use the available file-writing tool to create
 `src/main/java/{package-path}/{RepoName}.java`.
 
 ---
@@ -496,8 +498,11 @@ Tell the user: `Step 6/6: Applying dependencies and properties...`
 
 1. Read [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md)
 2. For each artifact NOT in `presentDeps`:
-   - Use `buildFile` from Step 1 (Maven or Gradle)
-   - Edit the build file to add the dependency (or use the Quarkus extension-add command listed in the example)
+   - Use `buildFile` from Step 1 (Maven or Gradle).
+   - For `io.quarkus:*` or `io.quarkiverse.*` extensions, use the detected build tool's extension-add
+     command when the example provides one, or edit the build file directly.
+   - For ordinary dependencies such as `org.mapstruct:*` and annotation processors, edit the existing
+     Maven/Gradle dependency or processor block; never pass them to a Quarkus extension command.
 3. No properties are written for this skill (a CRUD resource has no `application.properties` entries)
 4. If a shell is available, verify the project still compiles:
    Maven `./mvnw -q -DskipTests compile`, Gradle `./gradlew -q compileJava`.

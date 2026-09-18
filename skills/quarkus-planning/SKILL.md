@@ -29,7 +29,8 @@ Detect the project shape from the build files:
    See [`../quarkus-explore/references/extension-glossary.md`](../quarkus-explore/references/extension-glossary.md).
 4. **Persistence stack** — `quarkus-hibernate-orm-panache` → ORM Panache (sync);
    `quarkus-hibernate-reactive-panache` → reactive Panache (`Uni`-returning); neither → no Panache layer.
-5. **Config files** — `src/main/resources/application.properties` (or `.yaml`), Flyway/Liquibase migrations under
+5. **Config files** — the detected `src/main/resources/application.properties` or `.yaml`/`.yml` file, with
+   Flyway/Liquibase migrations under
    `src/main/resources/db/migration` / `db/changelog`.
 
 If the project is not a Quarkus application (no Quarkus BOM/plugin in the build file) — stop and tell
@@ -92,7 +93,7 @@ based on your request, i found: [context summary]
     - wait for the response before the next question
 
 4. **Testing approach** — "do you prefer TDD, regular approach or no tests?"
-    - options: "TDD (tests first)", "Regular (code first, then tests)", "None (no tests)"
+    - options: "TDD (tests first)", "Regular (code first, then tests)", "None (tests explicitly disabled)"
     - store the preference for reference during implementation
     - wait for the response before the next question
 
@@ -163,19 +164,18 @@ Check `docs/plans/` for existing files, then create `docs/plans/yyyymmdd-<task-n
 - dependencies identified: [extensions, config keys, datasources]
 
 ## Development Approach
-- **testing approach**: [TDD / Regular - from the user's preference in planning]
+- **testing approach**: [TDD / Regular / None - from the user's preference in planning]
 - complete each task fully before moving to the next
 - make small, focused changes
-- **CRITICAL: every task MUST include new/updated tests** for code changes in that task
-    - tests are not optional - they are a required part of the checklist
-    - write unit tests for new functions/methods
-    - write unit tests for modified functions/methods
-    - add new test cases for new code paths
+- **When tests apply, each task MUST include new/updated tests** for code changes in that task
+    - write tests for new or modified functions and code paths
     - update existing test cases if behavior changes
-    - tests cover both success and error scenarios
-- **CRITICAL: all tests must pass before starting the next task** - no exceptions
+    - cover both success and error scenarios where the chosen test type supports them
+- **When tests apply, all relevant tests must pass before starting the next task**
+- When tests are explicitly disabled or not applicable (for example, docs-only work), record the
+  alternative validation instead of inventing a test requirement.
 - **CRITICAL: update this plan file when scope changes during implementation**
-- run tests after each change
+- run the applicable tests or alternative validation after each change
 - maintain backward compatibility
 
 ## Testing Strategy
@@ -186,14 +186,15 @@ Check `docs/plans/` for existing files, then create `docs/plans/yyyymmdd-<task-n
 - **@QuarkusIntegrationTest**: black-box tests against the packaged artifact; no CDI injection,
   no `@InjectMock`; in standard Quarkus projects these run at the `verify` phase
   (`./mvnw verify` / `./gradlew quarkusIntTest` where configured)
-- **test config**: `%test.` profile properties in `application.properties`, or a
+- **test config**: `%test.` profile keys in the detected application config file (`.properties` or YAML), or a
   `@QuarkusTestProfile` implementation for per-test overrides
 - **data cleanup**: clean up explicitly in `@BeforeEach`/`@AfterEach` - rollback semantics of
   `@Transactional` tests are not something to rely on
 - **e2e tests**: if the project has UI-based e2e tests (Playwright, Cypress, etc.):
     - UI changes → add/update e2e tests in the same task as UI code
     - backend changes supporting UI → add/update e2e tests in the same task
-    - treat e2e tests with the same rigor as unit tests (must pass before the next task)
+    - when tests apply, treat e2e tests with the same rigor as unit tests (must pass before the next task);
+      when tests are disabled or not applicable, record the alternative validation instead
     - store e2e tests alongside unit tests (or in the designated e2e directory)
 
 ## Progress Tracking
@@ -227,12 +228,12 @@ Task structure guidelines:
 - Use specific descriptive names, not generic "[Core Logic]" or "[Implementation]"
 - Each task MUST have a **Files:** block listing files to Create/Modify (before checkboxes)
 - Aim for ~5 checkboxes per task (more is OK if logically atomic)
-- **CRITICAL: Each task MUST end with writing/updating tests before moving to the next**
-  - tests are not optional - they are a required deliverable of every task
+- **When tests apply, each task MUST end with writing/updating tests before moving to the next**
   - write tests for all NEW code added in this task
   - write tests for all MODIFIED code in this task
-  - include both success and error scenarios in tests
+  - include both success and error scenarios when applicable
   - list tests as SEPARATE checklist items, not bundled with implementation
+  - when tests are explicitly disabled or not applicable, list the alternative validation instead
 
 Example (NOTICE: Files block + tests as separate checklist items):
 
@@ -253,7 +254,7 @@ Example (NOTICE: Files block + tests as separate checklist items):
 **Files:**
 - Create: `src/main/java/org/acme/discount/DiscountResource.java`
 - Create: `src/main/java/org/acme/discount/DiscountDto.java`
-- Modify: `src/main/resources/application.properties`
+- Modify: the detected application config file (`.properties` or YAML)
 - Create: `src/test/java/org/acme/discount/DiscountResourceTest.java`
 
 - [ ] create `DiscountDto` as a record with bean validation constraints
@@ -278,9 +279,9 @@ Example (NOTICE: Files block + tests as separate checklist items):
 ### Task N-1: Verify acceptance criteria
 - [ ] verify all requirements from Overview are implemented
 - [ ] verify edge cases are handled
-- [ ] run the full test suite: `<project test command>`
-- [ ] run integration tests if the project has them: `<project verify command>`
-- [ ] verify test coverage meets the project standard
+- [ ] when tests apply, run the full test suite: `<project test command>`
+- [ ] when integration tests apply, run them: `<project verify command>`
+- [ ] when coverage is part of the request, verify it meets the project standard
 
 ### Task N: [Final] Update documentation
 - [ ] update README.md if needed
@@ -377,8 +378,10 @@ Then ask via the structured-question tool (or a numbered list as fallback):
 
 1. **Complete each task fully before moving to the next**:
     - STOP before moving to the next task
-    - if the testing approach is TDD or Regular: add/update tests for all new functionality and run them
-    - if the testing approach is None: verify manually via the running application (`./mvnw quarkus:dev`)
+    - if the testing approach is TDD or Regular and tests apply: add/update tests for all new functionality
+      and run them
+    - if the testing approach is None or tests are not applicable: use the detected build tool's manual or
+      static validation (Maven `./mvnw quarkus:dev`, Gradle `./gradlew quarkusDev`, or a focused check)
     - mark completed items with `[x]` in the plan file
 
 2. **If tests are used and fail**:
@@ -421,6 +424,6 @@ This ensures each task is solid before building on top of it.
 - [ ] No idioms from other Java frameworks leaked into the plan (see the blocklist in
       [`../quarkus-explore/SKILL.md`](../quarkus-explore/SKILL.md) and
       [`../../docs/quarkus-facts.md`](../../docs/quarkus-facts.md)).
-- [ ] Every task ends with test work and a test run before the next task.
+- [ ] Every task includes test work and a test run when tests apply; otherwise it records alternative validation.
 - [ ] The plan file path and naming follow `docs/plans/yyyymmdd-<task-name>.md`.
 - [ ] Any claim about existing behavior traces to a file you actually read.

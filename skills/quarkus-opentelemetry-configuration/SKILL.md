@@ -1,14 +1,13 @@
 ---
 name: quarkus-opentelemetry-configuration
 description: >
-  Adds OpenTelemetry observability to a Quarkus application: the quarkus-opentelemetry
-  extension, OTLP configuration for traces and metrics, custom spans (@WithSpan, Tracer)
-  and custom metrics (Meter: Counter / Histogram / Gauge), automatic instrumentation
-  coverage (HTTP, REST, gRPC, Kafka/messaging, JDBC), dev-mode observability
-  (LGTM Dev Service, Jaeger, logging exporter), and InMemory-exporter test setup.
-  Use this skill whenever tracing or metrics need to be added, enabled, configured, or
-  explained in a Quarkus project — even when the user just says "add observability",
-  "spans are not showing up", or names a backend like Jaeger / Grafana / Tempo / OTel collector.
+  Adds OpenTelemetry to a Quarkus application: the quarkus-opentelemetry extension, OTLP traces
+  and metrics, custom spans (@WithSpan, Tracer) and metrics (Meter), automatic instrumentation
+  (HTTP, REST, gRPC, messaging, JDBC), dev-mode targets (LGTM, Jaeger, logging exporter), and
+  InMemory test exporters.
+  Use this skill when tracing or metrics must be added, enabled, configured, or explained in a
+  Quarkus project, including observability requests and Jaeger, Grafana, Tempo, or OTel collector
+  issues.
   Triggers on: "opentelemetry", "otel", "tracing", "traces", "spans", "metrics",
   "quarkus-opentelemetry", "OTLP", "Jaeger", "Grafana LGTM", "@WithSpan", "Micrometer",
   "observability".
@@ -25,7 +24,7 @@ custom instrumentation code (spans, metrics), dev-mode observability targets, an
 InMemory-exporter test setup. Ensures the extension dependency is on the classpath.
 
 > **CRITICAL: Code ONLY from `examples/` files. If no matching example — STOP and ask user.**
-> **CRITICAL: Config keys ONLY from `examples/_properties/` and `references/config-reference.md`.**
+> **CRITICAL: Config keys ONLY from `examples/_properties/` and [`references/config-reference.md`](references/config-reference.md).**
 >   `quarkus.otel.*` keys are easy to hallucinate; never invent a key that is not listed there.
 > **CRITICAL: For questions with a fixed set of choices, use your harness's structured-question tool
 >   (e.g. `AskUserQuestion` / `ask_user_question`); fall back to a plain numbered list.**
@@ -48,7 +47,9 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
    there are three Micrometer/OTel combinations and they must not be mixed blindly.
 5. **Existing wiring** — grep `src/main` for `quarkus.otel.` (config) and
    `io.opentelemetry` (`@WithSpan`, `Tracer`, `Meter`, `SpanBuilder`).
-6. **Config files** — `src/main/resources/application.properties` (or `.yaml` if `quarkus-config-yaml` is present).
+6. **Config files** — detect `src/main/resources/application.properties` or `.yaml`/`.yml` only when
+   `quarkus-config-yaml` is present. If YAML is selected without that extension or the native YAML
+   structure cannot be handled safely, stop instead of writing properties syntax into it.
 
 ## Two paths (Step 2 picks per signal)
 
@@ -126,7 +127,7 @@ Tell the user: `Step 1/7: Gathering context...`
 | Source | Variables extracted |
 |---|---|
 | `pom.xml` / `build.gradle(.kts)` | `buildTool`, `quarkusVersion`, `presentDeps`, `mainPackage`, artifact version |
-| `application.properties` (read fully) | `existingProps` — all `quarkus.otel.*`, `quarkus.datasource.*`, `quarkus.micrometer.*` keys |
+| detected config file (`.properties` or YAML) | `existingProps` — `quarkus.otel.*`, datasource, and Micrometer keys; read the selected format and redact passwords, tokens, auth headers, and credential-bearing URLs before retaining or reporting values |
 | grep `io\.opentelemetry` under `src/main/java` | `existingOtelCode` — classes already using `@WithSpan`/`Tracer`/`Meter` (reuse them, do not duplicate) |
 | grep `quarkus\.otel\.` under `src/main/resources` | `existingOtelProps` — keys already written; overwrite in place, never duplicate |
 | datasources | `hasDatasource` — `quarkus.datasource.*` present → JDBC telemetry becomes a sensible offer |
@@ -136,7 +137,7 @@ in its deps, (+1) any `quarkus.otel.*` key. Exactly one module with score ≥ 1 
 more, or all-zero → ask which module, then re-gather for that module.
 
 **Derived:**
-- `otelExtensionPresent` — skip the Step 3 dependency add if true.
+- `otelExtensionPresent` — skip the Step 3 dependency add if true. Never retain raw OTLP auth headers or credential-bearing endpoints; keep only redacted values and key/profile/status.
 - `micrometerPresent` — `quarkus-micrometer` (or a registry) in deps; changes the metrics advice (see
   [`references/micrometer-interop.md`](references/micrometer-interop.md)).
 - `quarkusVersion` — drives the version-drift notes (see the drift box in Step 4).
@@ -172,8 +173,11 @@ Per [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependenci
 | `devObservability = logging-exporter` | `io.opentelemetry:opentelemetry-exporter-logging` |
 | `testSetup = true` | `io.opentelemetry:opentelemetry-sdk-testing` (test scope) |
 
-Prefer `./mvnw quarkus:add-extension -Dextensions="opentelemetry"` / `./gradlew addExtension --extensions="opentelemetry"`;
-match the project's existing dependency style (BOM-managed, no versions). If `otelExtensionPresent`,
+For a missing Quarkus extension, use the command matching the detected build tool:
+`./mvnw quarkus:add-extension -Dextensions="opentelemetry"` or
+`./gradlew addExtension --extensions="opentelemetry"`; match the project's existing dependency style
+(BOM-managed, no versions). Add ordinary `io.opentelemetry:*` artifacts (logging/testing) as
+Maven/Gradle dependencies from the example, not through `add-extension`. If `otelExtensionPresent`,
 skip and say so.
 
 ## Step 4 — Write configuration
@@ -190,8 +194,9 @@ Compose `application.properties` **only** from
    to true (see drift box).
 3. **Dev observability** — per the chosen target:
    - `lgtm` → no endpoint properties at all (the Dev Service injects the endpoint itself);
-   - `jaeger` → nothing in properties either (default OTLP endpoint `localhost:4317` already matches
-     the Jaeger container); report the `docker run` command;
+   - `jaeger` → check the exact Quarkus version and Jaeger collector protocol first. Omit endpoint
+     properties only when the verified default and container port match; otherwise write an explicit
+     endpoint and matching protocol. Report the `docker run` command;
    - `logging-exporter` → `exporter=logging` + short `metric.export.interval` under `%dev.`;
    - `external` → the user's URL, written under `%dev.`/as asked.
 4. **Production** — when requested: `%prod.quarkus.otel.exporter.otlp.endpoint=<collector>` **plus**
@@ -199,16 +204,15 @@ Compose `application.properties` **only** from
    OTLP endpoint unprefixed when a Dev Service is in play (it would override the Dev Service's
    endpoint in dev mode) — same discipline as broker addresses in the Kafka/RabbitMQ skills.
 
-**Version drift box — read before writing endpoint/protocol keys:**
+**Version-scoped guidance — read before writing endpoint/protocol keys:**
 
-| Key | Quarkus 3.33 LTS (2026-03) | Newer main (3.39+) |
-|---|---|---|
-| `quarkus.otel.exporter.otlp.protocol` default | `grpc` → port **4317** | `http/protobuf` → port **4318** |
-| `quarkus.otel.metrics.enabled` default | **false** (tech preview) | true |
-
-Therefore: always write `quarkus.otel.metrics.enabled=true` explicitly, and when writing an endpoint
-always write `protocol` next to it with the port matched to the protocol (`grpc` ↔ 4317,
-`http/protobuf` ↔ 4318). Never rely on these defaults.
+Check the project's exact Quarkus version against the verified facts in
+[`../../docs/quarkus-facts.md`](../../docs/quarkus-facts.md) before relying on defaults; the OTLP
+protocol and metrics defaults are version-scoped and may differ between supported branches. Do not
+infer a default from the phrase “newer Quarkus” or from an unverified version boundary.
+Regardless of the default, always write `quarkus.otel.metrics.enabled=true` explicitly when metrics
+are used. When writing an endpoint, write `protocol` next to it with the matching port (`grpc` ↔
+4317, `http/protobuf` ↔ 4318). Never rely on an unverified default.
 
 Overwrite existing keys in place; never delete unrelated keys or duplicate a key. YAML flavour
 (`application.yaml` with `quarkus-config-yaml`): nest the same keys.
@@ -251,8 +255,9 @@ Match the user's conversation language. Include:
 - Files written/edited and the exact keys / beans added.
 - Extension state: added / already present.
 - **How to see the data** for the chosen target:
-  - `lgtm` → run `./mvnw quarkus:dev`; the Grafana endpoint appears in the dev-mode log
-    (`grafana.endpoint=http://localhost:<port>`) and in Dev UI (`/q/dev-ui/extensions`).
+  - `lgtm` → run `./mvnw quarkus:dev` (Maven) or `./gradlew quarkusDev` (Gradle); the Grafana
+    endpoint appears in the dev-mode log (`grafana.endpoint=http://localhost:<port>`) and in Dev UI
+    (`/q/dev-ui/extensions`).
   - `jaeger` → start the container (command in
     [`examples/_properties/dev-observability.md`](examples/_properties/dev-observability.md)), UI at
     `http://localhost:16686`.

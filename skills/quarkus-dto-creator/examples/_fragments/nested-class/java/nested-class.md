@@ -11,7 +11,7 @@ body is `{ }` (empty) when no nested classes are generated; for each `NEW_NESTED
 insert the nested record **inside** that body. One blank line between the opening `{` and the first
 nested record, and one blank line between adjacent nested records.
 
-Use the Edit tool with the closing `}` of the parent as the anchor — never rewrite the whole file.
+Use the available file-editing tool with the closing `}` of the parent as the anchor — never rewrite the whole file.
 
 ## Code
 

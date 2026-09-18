@@ -12,15 +12,15 @@ quarkus.otel.metrics.enabled=true
 
 ## Why explicit
 
-`quarkus.otel.metrics.enabled` defaults to **false** on Quarkus 3.33 LTS ("metrics are disabled by
-default ... tech preview"); newer Quarkus versions flipped the default to true. Writing `true`
-explicitly is correct on both — the skill never relies on this default.
+`quarkus.otel.metrics.enabled` has a version-scoped default. Writing `true` explicitly is correct
+across the supported branches — the skill never relies on an unverified default.
 
 ## Production block (only when production config was requested)
 
 ```properties
 %prod.quarkus.otel.exporter.otlp.metrics.endpoint=${collectorUrl}
-%prod.quarkus.otel.exporter.otlp.metrics.protocol=${collectorProtocol}
+# Add a signal-specific protocol key only after verifying it in the exact Quarkus version.
+# For a shared collector, use quarkus.otel.exporter.otlp.protocol from dev-observability.md.
 ```
 
 Only the metrics-specific lines differ from traces: the generic
@@ -32,8 +32,8 @@ traces and metrics go to **different** collectors.
 
 | Variable | Source | Default |
 |----------|--------|---------|
-| `${collectorProtocol}` | user input | `grpc` (port 4317) on Quarkus 3.33 LTS; `http/protobuf` (port 4318) on newer Quarkus — always write the protocol next to the endpoint so the port matches |
-| `${collectorUrl}` | user input | must include the matching port (`http://otel-collector:4317` for grpc) |
+| `${collectorProtocol}` | user input or exact-version lookup | no generic default — always verify the protocol and matching port before writing an endpoint |
+| `${collectorUrl}` | user input | must include the port matching the verified protocol; do not infer a port from an unverified default |
 
 ## Rules
 

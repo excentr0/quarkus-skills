@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `unit` + `quarkus` (`@QuarkusTest`) | surefire | `test` | `./mvnw test` |
 | `integration` (`@QuarkusIntegrationTest`, `*IT.java`) | failsafe | `verify` (`integration-test` + `verify`) | `./mvnw verify -DskipITs=false` |
-| `all` | both | `verify` | `./mvnw clean verify -DskipITs=false` |
+| `all` | both | two sequential phases | `./mvnw clean test`, then `./mvnw verify -DskipITs=false` |
 
 `@QuarkusIntegrationTest` tests are black-box: they launch the artifact the build produced
 (`target/quarkus-app/quarkus-run.jar`, a native binary with `-Dnative`, or a container image) and test
@@ -63,7 +63,7 @@ otherwise a short note in the conversation. Example shape:
 Maven test commands (resolved <YYYY-MM-DD>):
 - quarkus        -> ./mvnw test
 - integration    -> ./mvnw verify -DskipITs=false
-- all            -> ./mvnw clean verify -DskipITs=false
+- all            -> ./mvnw clean test, then ./mvnw verify -DskipITs=false
 - order module / quarkus -> ./mvnw test -pl order-service
 ```
 

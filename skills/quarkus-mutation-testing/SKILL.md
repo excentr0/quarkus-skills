@@ -16,6 +16,12 @@ description: >-
 
 # Mutation testing
 
+Use [`references/configuration.md`](references/configuration.md) for build setup,
+[`references/quarkus-tests.md`](references/quarkus-tests.md) for test scope,
+[`references/exclusions.md`](references/exclusions.md) for mutation boundaries,
+[`references/usage.md`](references/usage.md) for commands, and
+[`references/report.md`](references/report.md) for result extraction.
+
 ## Preflight — project detection
 
 This skill is harness-agnostic: file tools plus shell commands — no MCP server or IDE integration.
@@ -30,7 +36,7 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
    - `@QuarkusTest` classes — boot the whole application (and Dev Services) per run;
    - `*IT` classes — packaged-artifact tests, never PIT drivers.
 
-   Read `references/quarkus-tests.md` before step 1: on this stack the test layout decides
+   Read [`references/quarkus-tests.md`](references/quarkus-tests.md) before step 1: on this stack the test layout decides
    `targetClasses`/`targetTests`, and getting it wrong turns a useful run into a multi-hour one.
 
 ---
@@ -63,7 +69,7 @@ after all, and continue.
 **Skip if** the request has nothing to do with exclusions or the mutated scope (`targetClasses` /
 `targetTests`).
 
-Otherwise follow `references/exclusions.md`. It answers a question as well as it applies a change —
+Otherwise follow [`references/exclusions.md`](references/exclusions.md). It answers a question as well as it applies a change —
 when the request is only a question, stop after judging the candidate and leave the build alone.
 
 Tell the user: `Step 2/4: Reviewing what gets mutated...`
@@ -73,7 +79,8 @@ Tell the user: `Step 2/4: Reviewing what gets mutated...`
 **Skip if** the user asked only to wire PIT into the build, or only for advice on exclusions — then say
 a run is available and stop there.
 
-Otherwise follow `references/usage.md`. The report itself follows `references/report.md`.
+Otherwise follow [`references/usage.md`](references/usage.md). The report itself follows
+[`references/report.md`](references/report.md).
 
 Tell the user: `Step 3/4: Running PIT...`
 
@@ -81,7 +88,7 @@ Tell the user: `Step 3/4: Running PIT...`
 
 **Skip if** the memory entry already describes what the run actually used.
 
-Otherwise write or update the `pitest` entry in the shape `references/configuration.md` §5 defines.
+Otherwise write or update the `pitest` entry in the shape [`references/configuration.md`](references/configuration.md) §5 defines.
 This is what lets step 1 be skipped next time — dropping it makes the next run pay for the version
 probing and test-scope analysis all over again.
 

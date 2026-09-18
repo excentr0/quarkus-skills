@@ -1,0 +1,42 @@
+[
+  {
+    "skill": "quarkus-explore",
+    "prompt": "Explore this Quarkus project and summarize its structure.",
+    "should_trigger": true
+  },
+  {
+    "skill": "quarkus-explore",
+    "prompt": "Configure a Kafka channel for the orders topic.",
+    "should_trigger": false
+  },
+  {
+    "skill": "quarkus-kafka-configuration",
+    "prompt": "Configure Kafka for the orders channel.",
+    "should_trigger": true
+  },
+  {
+    "skill": "quarkus-kafka-configuration",
+    "prompt": "Add a Reactive Messaging Emitter without naming the broker.",
+    "should_trigger": false
+  },
+  {
+    "skill": "quarkus-kafka-configuration",
+    "prompt": "Configure a RabbitMQ queue for order events.",
+    "should_trigger": false
+  },
+  {
+    "skill": "quarkus-rabbitmq-configuration",
+    "prompt": "Configure a RabbitMQ queue for order events.",
+    "should_trigger": true
+  },
+  {
+    "skill": "quarkus-rabbitmq-configuration",
+    "prompt": "Add a generic Reactive Messaging Emitter without naming the broker.",
+    "should_trigger": false
+  },
+  {
+    "skill": "quarkus-rabbitmq-configuration",
+    "prompt": "Configure a Kafka topic for order events.",
+    "should_trigger": false
+  }
+]

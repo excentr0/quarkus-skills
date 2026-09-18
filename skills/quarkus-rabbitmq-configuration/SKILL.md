@@ -3,16 +3,15 @@ name: quarkus-rabbitmq-configuration
 description: >
   Configures RabbitMQ messaging in a Quarkus application: channel configuration in
   application.properties (`smallrye-rabbitmq` connector, queues/exchanges/routing keys)
-  and, when needed, generated @Incoming / @Outgoing / @Channel messaging beans.
-  Use this skill when RabbitMQ configuration needs to be created or extended, either
-  standalone or as part of a larger task (e.g. before adding an Emitter producer or an
-  @Incoming consumer).
+  and, when needed, generated RabbitMQ-specific Reactive Messaging beans
+  (`@Incoming` / `@Outgoing` / `@Channel`). Use this skill when RabbitMQ configuration needs to be
+  created or extended, either standalone or as part of a larger task (e.g. before adding a RabbitMQ
+  `Emitter` producer or consumer).
   Triggers on: "configure rabbitmq", "add rabbitmq", "rabbitmq queue", "rabbitmq exchange",
-  "routing key", "produce to rabbitmq", "consume from rabbitmq", "smallrye-rabbitmq",
-  "Emitter", "Reactive Messaging", "message broker", "amqp".
+  "routing key", "produce to rabbitmq", "consume from rabbitmq", "smallrye-rabbitmq".
   Russian phrases also trigger this: "настрой rabbitmq", "добавь rabbitmq", "кролик",
   "очередь rabbitmq", "exchange rabbitmq", "роутинг кей", "отправка сообщений в rabbitmq",
-  "чтение сообщений из rabbitmq", "брокер сообщений".
+  "чтение сообщений из rabbitmq".
 ---
 
 # RabbitMQ Configuration
@@ -26,6 +25,10 @@ extension dependency is on the classpath.
 > (e.g. `AskUserQuestion` / `ask_user_question`); fall back to a plain numbered list.**
 > **CRITICAL: Read the conversation context BEFORE running Step 1.** Half the questions in Steps 2–3
 > may already be answered by the user's prompt and prior turns.
+> **CRITICAL: Broker disambiguation.** A request that only says Reactive Messaging, Emitter,
+> `@Incoming`, `@Outgoing`, message broker, or AMQP is not enough to choose RabbitMQ. Ask one
+> clarifying question to identify the broker before selecting this skill; never choose Kafka or
+> RabbitMQ arbitrarily.
 
 ---
 
@@ -40,7 +43,9 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
    Present or not — Step 4b fixes it.
 4. **Existing wiring** — grep `src/main` for `mp.messaging.` (channel config) and
    `org.eclipse.microprofile.reactive.messaging` (`@Incoming`/`@Outgoing`/`@Channel`).
-5. **Config files** — `src/main/resources/application.properties` (or `.yaml` if `quarkus-config-yaml` is present).
+5. **Config files** — detect `src/main/resources/application.properties` or `.yaml`/`.yml` only when
+   `quarkus-config-yaml` is present. If YAML is selected without that extension or the native YAML
+   structure cannot be handled safely, stop instead of writing properties syntax into it.
 
 ## Two paths (Step 3 picks)
 
@@ -56,15 +61,16 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
   [`examples/serialization-mapping.md`](examples/serialization-mapping.md)); a consumer of JSON POJOs
   receives `io.vertx.core.json.JsonObject` and maps it. Advanced per-message control (routing key,
   headers) goes through message metadata — see
-  [`examples/producer-bean.md`](examples/producer-bean.md).
+  [`examples/producer-bean.md`](examples/producer-bean.md). Connector attributes and defaults are
+  listed in [`references/channel-config-reference.md`](references/channel-config-reference.md).
 
 ## Defaults
 
 | Option | Default | Always ask? |
 |---|---|---|
-| `valueType` (producer, i.e. outgoing payload) | `java.lang.String` | YES — always ask |
-| `valueType` (consumer) | symmetric with producer; POJO consumers take `JsonObject` + `mapTo` | NO — symmetric unless user says otherwise |
-| `path` | `properties` when `@Incoming`/`@Outgoing`/`@Channel` beans already exist, else `beans` | YES |
+| `path` | `properties` when `@Incoming`/`@Outgoing`/`@Channel` beans already exist, else `beans` | YES — choose first |
+| `valueType` (producer, i.e. outgoing payload) | `java.lang.String` | YES — only for Path B |
+| `valueType` (consumer) | symmetric with producer; POJO consumers take `JsonObject` + `mapTo` | NO — only for Path B when asymmetric |
 | `channelName` | `${typeKebab}-in` / `${typeKebab}-out` — `${typeKebab}` = kebab-case value type simple name (`OrderEvent` → `order-event`) | NO |
 | `queueName` (incoming) | channel name (connector default) | NO — write `.queue.name` only when the queue differs |
 | `exchangeName` (outgoing) | channel name (connector default; `""` = default exchange) | NO — write `.exchange.name` only when the exchange differs |
@@ -78,8 +84,8 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
 | `language` | Java | NO — this repo's skills are Java-first |
 
 **Smart defaults.** If the user says "use defaults" / "all defaults" / "minimal configuration" → skip every
-`Always ask = NO` question. Only ask the mandatory ones (`valueType` producer, `path`) plus anything the user
-mentioned non-default.
+`Always ask = NO` question and choose the path first. Ask value types only if the selected path is Path B;
+otherwise ask no bean-type questions. Ask anything else the user mentioned non-default.
 
 **Smart answer recognition.** When the user provides a value directly ("publish `OrderEvent`", "consume
 `PaymentEvent`", "queue `orders-processed`"), accept it without asking again. Several answers in one
@@ -98,9 +104,9 @@ prior turns, and the user's prompt. Only ask when context yields no clear defaul
 2. **Strong signal → one-line confirmation.** State the decision and alternatives; the user can accept
    silently. Used for: reusing an existing messaging bean class, queue/exchange names defaulting to
    channel names.
-3. **No clear default → structured question** with the recommended option first. Used for: `valueType`,
-   `path`, existing infrastructure (declare vs pre-provisioned).
-4. **Empty for a critical input → ask plainly.** Producer `valueType`; the handling behavior for a
+3. **No clear default → structured question** with the recommended option first. Choose `path` first;
+   only for Path B ask `valueType` and existing infrastructure (declare vs pre-provisioned).
+4. **Empty for a critical input → ask plainly.** Path B producer `valueType`; the handling behavior for a
    generated consumer (see Step 5).
 
 ## Step 0 — Conversation context (mental, no tool calls)
@@ -131,7 +137,7 @@ Tell the user: `Step 1/6: Gathering context...`
 | Source | Variables extracted |
 |---|---|
 | `pom.xml` / `build.gradle(.kts)` | `buildFile`, `buildTool`, `quarkusVersion`, `presentDeps`, `mainPackage` (from source tree), module list |
-| `application.properties` (read fully) | `existingProps` — all `mp.messaging.*`, `rabbitmq-host`/`rabbitmq-port`/`rabbitmq-username`/`rabbitmq-password`, `%dev.`/`%prod.` prefixed keys |
+| detected config file (`.properties` or YAML) | `existingProps` — `mp.messaging.*` and RabbitMQ connection keys; read the selected format and redact passwords, tokens, auth headers, and credential-bearing URLs before retaining or reporting values |
 | grep `mp\.messaging\.` under `src/main` | `existingChannels` — channel names already configured, with direction |
 | grep `@Incoming\|@Outgoing\|@Channel` under `src/main/java` | `existingMessagingBeans` — class FQNs + file paths + the channel names each one uses |
 
@@ -141,9 +147,9 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 **Derived:**
 - `rabbitmqExtensionPresent` — `presentDeps` contains `io.quarkus:quarkus-messaging-rabbitmq`. Skip Step 4b if true.
-- `singlePropsFile` — exactly one `application.properties`. Skip the props-file question if true.
-- `existingBrokerAccess` — values of `rabbitmq-host`/`rabbitmq-port`/`rabbitmq-username`/`rabbitmq-password`
-  or any channel `host`/`port` if present, else `null`.
+- `singleConfigFile` — exactly one detected application config file (`.properties`/`.yaml`/`.yml`). Skip the config-file question if true.
+- `existingBrokerAccess` — presence and redacted values of `rabbitmq-host`/`rabbitmq-port`/`rabbitmq-username`/
+  `rabbitmq-password` or any channel `host`/`port` if present, else `null`; never retain a raw password or token.
 - `existingBeanClasses` — from `existingMessagingBeans`; carries FQN, file path, declared channels. Used in Step 3.
 - `orphanChannels` — channels referenced in code (`@Incoming`/`@Outgoing`/`@Channel`) but absent from
   `existingChannels` → they are missing config; this skill's job is to add it.
@@ -152,13 +158,16 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 Tell the user: `Step 2/6: Asking all questions...`
 
-Ask everything in a single structured-question call (up to 5 questions). Pre-fill from context, skip
-already-answered:
+Ask the path question first, then ask only the questions that apply to that path. Pre-fill from context
+and skip already-answered:
 
-1. **Outgoing payload type?** — options: `java.lang.String` (Recommended), `io.vertx.core.json.JsonObject`,
-   `java.util.UUID`, `Custom POJO (specify FQN — sent as JSON)`
-2. **Where to put the wiring?** — `application.properties only` (Path A) / `application.properties + messaging bean`
+1. **Where to put the wiring?** — detected config file only (Path A) / detected config file + messaging bean
    (Path B, Recommended when no `@Incoming`/`@Outgoing`/`@Channel` bean exists yet)
+
+If Path A is selected, skip payload value types and bean-target questions. If Path B is selected, ask:
+
+2. **Outgoing payload type?** — options: `java.lang.String` (Recommended), `io.vertx.core.json.JsonObject`,
+   `java.util.UUID`, `Custom POJO (specify FQN — sent as JSON)`
 3. **Queue/exchange names?** — only when a name cannot be derived: default queue (incoming) and exchange
    (outgoing) = channel name. Skip when the user named them.
 4. **Who declares the RabbitMQ infrastructure?** — `the app declares queue/exchange` (Recommended, connector
@@ -167,8 +176,8 @@ already-answered:
 5. **Production broker?** — `Dev Services in dev/test, real broker later` (Recommended) / `configure real
    broker address now` (plain value; written under `%prod.`)
 
-If the user says "use defaults" — skip type and name questions, default outgoing type to
-`java.lang.String`, and ask only `valueType` (confirm) + `path`.
+If the user says "use defaults" — choose the path first, skip type questions for Path A, and for Path B
+use `java.lang.String` after confirming the payload type.
 
 ## Step 3 — Bean target (Path B only)
 
@@ -179,7 +188,7 @@ If `existingBeanClasses` is non-empty, apply Decision principle 2 (one-line conf
 > Project already has messaging code in `${class.fqn}`. Add the new consumer/producer there? (Yes/No)
 
 - **Yes** → `beanTarget = existing`. Reuse the class's `packageName`, `className`, and file path; Step 5
-  appends the method/field with your edit tool instead of creating a file.
+  appends the method/field with the available file-editing tool instead of creating a file.
 - **No (or no existing beans)** → `beanTarget = new`:
   - `className` — default `${ValueType}Messaging` for both directions, `${ValueType}Consumer` for a consumer
     only, `${ValueType}Producer` for a producer only. On file collision append a numeric suffix.
@@ -238,8 +247,7 @@ Rules (all verified — see the checklist):
   keys; per-channel equivalents are `host`, `port`, `username`, `password`.
   **Never write them unprefixed** — it disables Dev Services for RabbitMQ in dev/test. A real broker goes
   under the production profile: `%prod.rabbitmq-host=${brokerHost}` (plus `%prod.rabbitmq-port=5672` and
-  `%prod.rabbitmq-username`/`%prod.rabbitmq-password` when the broker requires auth). Pre-fill silently
-  from `existingBrokerAccess` when present.
+  `%prod.rabbitmq-username`/`%prod.rabbitmq-password` when the broker requires auth). Reuse only an existing non-secret endpoint or environment-variable reference; never copy a redacted username, password, or token.
 - Per-channel `host`/`port` also disable Dev Services when every channel defines them — avoid per-channel
   broker keys unless the user asks for mixed brokers.
 - Overwrite existing keys in place; never delete unrelated keys or duplicate a key.
@@ -256,8 +264,9 @@ If `rabbitmqExtensionPresent = true`, skip. Otherwise add `io.quarkus:quarkus-me
 ./mvnw quarkus:add-extension -Dextensions="quarkus-messaging-rabbitmq"
 ```
 
-or add the dependency to the build file directly (Gradle: `implementation("io.quarkus:quarkus-messaging-rabbitmq")`),
-matching the project's existing dependency style (BOM-managed, no `<version>`).
+or add the extension to the detected build file directly (Gradle: `implementation("io.quarkus:quarkus-messaging-rabbitmq")`),
+matching the project's existing dependency style (BOM-managed, no `<version>`). Do not pass ordinary
+non-Quarkus dependencies to the extension command.
 
 ## Step 5 — Generate messaging beans (Path B only)
 
@@ -294,9 +303,10 @@ Match the user's conversation language. Include:
 - Effective defaults stated: queue/exchange names = channel names (when `.queue.name`/`.exchange.name`
   were omitted); exchange type `topic` (when omitted); routing binding `#` (when `.routing-keys` was
   omitted); infrastructure declared by the app (or `declare=false` where written).
-- How to try it: `./mvnw quarkus:dev` — Dev Services starts a RabbitMQ broker automatically in dev/test
-  because no `rabbitmq-host`/`rabbitmq-port` is configured (say explicitly if that is not the case, e.g.
-  a `%prod.` address disables it). Management UI is available on the random `http-port` in dev.
+- How to try it: `./mvnw quarkus:dev` (Maven) or `./gradlew quarkusDev` (Gradle) — Dev Services starts
+  a RabbitMQ broker automatically in dev/test because no `rabbitmq-host`/`rabbitmq-port` is configured
+  (say explicitly if that is not the case, e.g. a `%prod.` address disables it). Management UI is
+  available on the random `http-port` in dev.
 - If the consumer body was left as a comment stub — say so and ask what the handling should be.
 - `orphanChannels` that remain unconfigured, if any.
 

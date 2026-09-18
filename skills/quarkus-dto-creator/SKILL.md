@@ -352,12 +352,12 @@ Tell the user: `Step 6/7: Generating DTO...`
    **If skeleton (new file):**
    - read the skeleton `.md` from `examples/_skeletons/`
    - apply variable substitutions
-   - use the Write tool to create the file
+   - use the available file-writing tool to create the file
 
    **If fragment:**
    - read the fragment `.md` from `examples/_fragments/`
    - read the Insert Point to know WHERE to insert
-   - use the Edit tool to insert code at the specified point
+   - use the available file-editing tool to insert code at the specified point
    - apply variable substitutions
 
 5. Variable substitution rules:

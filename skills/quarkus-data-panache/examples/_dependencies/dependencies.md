@@ -11,7 +11,7 @@ Maven — the versions come from the Quarkus BOM, never specify them explicitly:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-postgresql</artifactId>
+    <artifactId>quarkus-jdbc-${dbKind}</artifactId>
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -23,12 +23,13 @@ Gradle:
 
 ```kotlin
 implementation("io.quarkus:quarkus-hibernate-orm-panache")
-implementation("io.quarkus:quarkus-jdbc-postgresql")
+implementation("io.quarkus:quarkus-jdbc-${dbKind}")
 implementation("io.quarkus:quarkus-hibernate-validator")
 ```
 
-Preferred way to add: `./mvnw quarkus:add-extension -Dextensions="hibernate-orm-panache,jdbc-postgresql,hibernate-validator"`
-(Gradle: `./gradlew addExtension --extensions="..."`).
+Replace `${dbKind}` with the driver detected in the project (for example, `postgresql`). Preferred way to
+add: `./mvnw quarkus:add-extension -Dextensions="hibernate-orm-panache,jdbc-${dbKind},hibernate-validator"`
+(Gradle: `./gradlew addExtension --extensions="..."`). Never choose a driver that was not detected.
 
 ## Reactive Panache (only when the project is reactive)
 

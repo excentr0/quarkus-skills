@@ -12,8 +12,10 @@ Add exactly one migration extension — never both.
 
 ```bash
 ./mvnw quarkus:add-extension -Dextensions="quarkus-flyway"
-./gradlew addExtension --extensions="quarkus-liquibase"
+./gradlew addExtension --extensions="quarkus-flyway"
 ```
+
+For Liquibase, use the same commands with `quarkus-liquibase` as the extension name.
 
 ## Maven
 

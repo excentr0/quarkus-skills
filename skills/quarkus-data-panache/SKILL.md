@@ -26,6 +26,9 @@ Detect the persistence setup from the build files before touching any code:
    `quarkus-hibernate-orm` without a Panache extension → plain Hibernate ORM: the Panache-specific rules
    (Active Record statics, `PanacheQuery`, `PanacheRepository`) do not apply, the JPA mapping rules in
    [`references/entity-rules-impl.md`](references/entity-rules-impl.md) still do.
+   If both blocking and reactive Panache extensions are present, stop before generating code and ask which
+   persistence mode this task targets; use the imports and return types for only that mode, rather than
+   mixing blocking and reactive APIs implicitly.
 3. **Database driver** — `quarkus-jdbc-*` (blocking) or `quarkus-reactive-*-client` (reactive).
 4. **Migrations** — `quarkus-flyway` or `quarkus-liquibase` present → schema changes require a migration file;
    never flip `quarkus.hibernate-orm.database.generation` as a shortcut for a schema change.
@@ -33,8 +36,13 @@ Detect the persistence setup from the build files before touching any code:
    detection below before writing code — do not assume.
 
 If neither Panache extension is present, stop and tell the user this skill targets Panache projects;
-offer to add the extension (`./mvnw quarkus:add-extension -Dextensions="hibernate-orm-panache,jdbc-postgresql"`).
-  Required dependency blocks: [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md).
+do not add it silently. If the user explicitly approves adding it, use the detected build tool and the
+Panache extension plus the database driver extension detected in preflight. Derive `${jdbcExtension}`
+from the existing `quarkus-jdbc-*` dependency (or the reactive client for reactive mode); if no driver
+is present, ask instead of defaulting to PostgreSQL:
+Maven `./mvnw quarkus:add-extension -Dextensions="${panacheExtension},${jdbcExtension}"` or
+Gradle `./gradlew addExtension --extensions="${panacheExtension},${jdbcExtension}"`.
+Required dependency blocks: [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md).
 
 ---
 
