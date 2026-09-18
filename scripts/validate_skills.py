@@ -71,6 +71,22 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str | None, str | None
     return fields, "\n".join(lines[end + 1 :]).strip(), None
 
 
+MIRRORED_REFERENCES = {
+    # Localized copies of another skill's reference; the copy must stay byte-identical
+    # to its origin apart from the leading provenance banner.
+    Path("skills/quarkus-planning/references/extension-glossary.md"): Path(
+        "skills/quarkus-explore/references/extension-glossary.md"
+    ),
+    Path("skills/quarkus-planning/references/entity-description.md"): Path(
+        "skills/quarkus-explore/references/entity-description.md"
+    ),
+    Path("skills/quarkus-planning/references/rest-endpoints.md"): Path(
+        "skills/quarkus-explore/references/rest-endpoints.md"
+    ),
+}
+BANNER_PREFIX = "> Local copy of `"
+
+
 def _allowed_out_of_skill(candidate: Path) -> bool:
     """Cross-skill links are allowed only for explicit delegation entry points."""
     try:
@@ -152,6 +168,35 @@ def validate_skill(path: Path, errors: list[str], warnings: list[str]) -> str | 
     return name or None
 
 
+def _strip_provenance_banner(text: str) -> str:
+    """Drop a leading '> Local copy of ...' banner and the blank lines after it."""
+    lines = text.splitlines(keepends=True)
+    if lines and lines[0].startswith(BANNER_PREFIX):
+        lines = lines[1:]
+        while lines and not lines[0].strip():
+            lines = lines[1:]
+    return "".join(lines)
+
+
+def validate_mirrored_references(errors: list[str]) -> None:
+    """Keep localized reference copies byte-identical to their origin skill's file."""
+    for copy_relative, origin_relative in sorted(MIRRORED_REFERENCES.items()):
+        copy_path = ROOT / copy_relative
+        origin_path = ROOT / origin_relative
+        for path in (copy_path, origin_path):
+            if not path.exists():
+                errors.append(f"{path.relative_to(ROOT)}: mirrored reference is missing")
+        if not copy_path.exists() or not origin_path.exists():
+            continue
+        copy_text = _strip_provenance_banner(copy_path.read_text(encoding="utf-8"))
+        origin_text = origin_path.read_text(encoding="utf-8")
+        if copy_text != origin_text:
+            errors.append(
+                f"{copy_relative}: diverged from {origin_relative} — "
+                "keep the localized copy in sync with its origin"
+            )
+
+
 def validate_eval_seeds(known_skills: set[str], errors: list[str]) -> None:
     relative = EVALS_FILE.relative_to(ROOT)
     if not EVALS_FILE.exists():
@@ -215,6 +260,7 @@ def main() -> int:
                 errors.append(f"duplicate skill name: {name}")
             known_skills.add(name)
 
+    validate_mirrored_references(errors)
     validate_eval_seeds(known_skills, errors)
 
     for warning in warnings:

@@ -306,12 +306,17 @@ user said "I want a different name" or "in a different package".
 Tell the user: `Step 4/5: Generating mapper...`
 
 Before generating, read [`references/generation-workflow.md`](references/generation-workflow.md) and
-the selected MapStruct/custom reference. Keep the entity-accessor convention below inline.
+the selected MapStruct/custom reference.
 
 - **NEVER** substitute anything not listed in the Variables section of the example file.
 - **NEVER** add imports, methods, or code not in the example.
 - **FQN handling (CRITICAL):** examples contain FQNs. When writing the final file, you **MUST** shorten
   them consistently and add sorted, non-duplicate imports while skipping same-package and `java.lang` types.
+- **Entity accessors — Panache convention (CRITICAL):** Panache entities declare `public` fields, so
+  custom mapper bodies use **direct field access** — read `pet.name`, write `pet.name = ...`, never
+  `getName()`/`setName()`. If the entity source instead declares `private` fields with getters/setters,
+  use those accessors. Decide once from the entity source in Step 2 (`${entityAccessors}`) and stay
+  consistent. DTO accessors follow the declaration form: `x()` for records, `getX()` for classes.
 
 ---
 
