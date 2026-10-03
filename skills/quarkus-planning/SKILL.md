@@ -17,6 +17,9 @@ Create an implementation plan in `docs/plans/yyyymmdd-<task-name>.md` with inter
 
 ## Preflight — Project detection (before step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP
 server or IDE integration is required.
 
@@ -42,10 +45,7 @@ Remember the build tool for later: every test command written into the plan must
 ---
 
 ## Step 0 — Parse intent and gather context
-
-Tell the user: `Step 0: Parsing request and scanning the project...`
-
-Before asking questions, understand what the user is working on:
+Treat the requested work as the plan goal and derive a concise title from its action and subject. Do not ask the user to restate either. Before asking questions, understand what the user is working on:
 
 1. **Parse the user's request** to identify intent:
     - "add feature Z" / "implement W" → feature development
@@ -60,59 +60,17 @@ Before asking questions, understand what the user is working on:
    [`references/entity-description.md`](references/entity-description.md),
    [`references/rest-endpoints.md`](references/rest-endpoints.md).
 
-**CRITICAL: do NOT launch a subagent for exploration and do NOT run the full quarkus-explore
-step 0–6 cycle. The goal is a quick scan, not exhaustive analysis. If more context is needed,
-ask the user in step 1.**
+Use a focused quick scan, not the full quarkus-explore cycle. Read directly by default; a mechanical exploration handoff is allowed only when the caller/operator permits delegation and the environment supports it. If more context is needed, ask about material unknowns in Step 1.**
 
 ---
 
-## Step 1 — Present context and ask focused questions
-
-Tell the user: `Step 1: Asking focused questions...`
-
-Show the discovered context, then ask questions **one at a time** using your harness's
-structured-question tool (e.g. `AskUserQuestion` / `ask_user_question`); if none is available,
-present a short numbered list and wait for the answer.
-
-```text
-based on your request, i found: [context summary]
-```
-
-**Ask questions one at a time (do not overwhelm with multiple questions):**
-
-1. **Plan purpose** — "what is the main goal?"
-    - provide multiple choice with a suggested answer based on discovered intent
-    - wait for the response before the next question
-
-2. **Scope** — "which components/files are involved?"
-    - provide multiple choice with the discovered files/areas
-    - wait for the response before the next question
-
-3. **Constraints** — "any specific requirements or limitations?"
-    - can be open-ended if constraints vary widely
-    - wait for the response before the next question
-
-4. **Testing approach** — "do you prefer TDD, regular approach or no tests?"
-    - options: "TDD (tests first)", "Regular (code first, then tests)", "None (tests explicitly disabled)"
-    - store the preference for reference during implementation
-    - wait for the response before the next question
-
-5. **Plan title** — "short descriptive title?"
-    - provide a suggested name based on intent
-
-After all questions are answered, synthesize the responses into the plan context.
+## Step 1 — Resolve only material unknowns
+Use the request and discovered project context as authoritative input. Derive the goal and a concise title from the request; take scope, constraints, and test preferences already stated by the caller as decided. Ask only about unresolved choices that materially affect plan correctness or acceptance, in one batched round. Prefer the harness's structured-question tool when available; otherwise use a short numbered list. Do not ask the caller to repeat information already provided or infer permission to change the requested scope.
 
 ---
 
 ## Step 1.5 — Explore approaches
-
-Tell the user: `Step 1.5: Comparing implementation approaches...`
-
-Once the problem is understood, propose implementation approaches:
-
-1. **Propose 2–3 different approaches** with trade-offs for each.
-2. **Lead with the recommended option** and explain the reasoning.
-3. **Present conversationally** — not as a formal document yet.
+Once the problem is understood, compare approaches only when more than one materially different option is viable. Recommend one with concise trade-offs; don't manufacture alternatives for a clear solution.
 
 Example format:
 
@@ -132,7 +90,7 @@ i see three approaches:
 which direction appeals to you?
 ```
 
-Use the structured-question tool to let the user select the preferred approach before creating the plan.
+Ask the user to select only if the choice remains unresolved and materially changes the plan. Use the structured-question tool when available; otherwise use a concise numbered question.
 
 **Skip this step** if:
 - the implementation approach is obvious (single clear path)
@@ -142,9 +100,6 @@ Use the structured-question tool to let the user select the preferred approach b
 ---
 
 ## Step 2 — Create plan file
-
-Tell the user: `Step 2: Creating the plan file...`
-
 Check `docs/plans/` for existing files, then create `docs/plans/yyyymmdd-<task-name>.md`
 (use the current date).
 
@@ -164,7 +119,7 @@ Check `docs/plans/` for existing files, then create `docs/plans/yyyymmdd-<task-n
 - dependencies identified: [extensions, config keys, datasources]
 
 ## Development Approach
-- **testing approach**: [TDD / Regular / None - from the user's preference in planning]
+- **testing approach**: [follow the user's stated preference; otherwise plan tests and validation by default, with None only when explicitly disabled or inapplicable]
 - complete each task fully before moving to the next
 - make small, focused changes
 - **When tests apply, each task MUST include new/updated tests** for code changes in that task
@@ -187,7 +142,7 @@ Check `docs/plans/` for existing files, then create `docs/plans/yyyymmdd-<task-n
   no `@InjectMock`; in standard Quarkus projects these run at the `verify` phase
   (`./mvnw verify` / `./gradlew quarkusIntTest` where configured)
 - **test config**: `%test.` profile keys in the detected application config file (`.properties` or YAML), or a
-  `@QuarkusTestProfile` implementation for per-test overrides
+  `QuarkusTestProfile` implementation for per-test overrides
 - **data cleanup**: clean up explicitly in `@BeforeEach`/`@AfterEach` - rollback semantics of
   `@Transactional` tests are not something to rely on
 - **e2e tests**: if the project has UI-based e2e tests (Playwright, Cypress, etc.):
@@ -305,9 +260,6 @@ Example (NOTICE: Files block + tests as separate checklist items):
 ---
 
 ## Step 2.1 — Analyze plan for domain persistence work
-
-Tell the user: `Step 2.1: Checking the plan for persistence work...`
-
 After writing the plan file, scan it for tasks that involve domain entities. If there are none —
 skip this step entirely.
 
@@ -319,14 +271,7 @@ If there are entity-related tasks, detect the persistence stack from the build f
 | `quarkus-hibernate-reactive-panache` | Panache ORM (reactive, `Uni`-returning) | `quarkus-data-panache` |
 | neither | none | skip this step |
 
-Once the stack is resolved:
-
-1. activate the `quarkus-data-panache` skill
-2. follow the skill's environment setup steps
-3. ask the user focused questions about the stack-specific decisions the plan implies — one at a time
-   using the structured-question tool (e.g. Active Record on the entity vs a Panache repository;
-   ID strategy — `PanacheEntity` long id vs a custom `UUID` id; for reactive: which layers return `Uni`)
-4. after all answers are collected, revise the plan:
+Once the stack is resolved, apply the `quarkus-data-panache` skill instructions to relevant plan tasks. A skill handoff does not itself authorize launching a subagent: mechanically delegate only when the caller/operator permits it and the environment supports it; otherwise read and apply the skill directly. Ask one batched round only for unresolved, material stack decisions (for example repository vs Active Record or custom ID strategy); use a structured-question tool when available and a numbered text list otherwise. Preserve caller-resolved choices. Then revise the plan:
     - add stack-specific notes to the relevant tasks
     - add a reminder in each entity task: "> **quarkus-data-panache skill required.** Before writing any entity code: activate the skill and verify the implementation follows its rules. For any deviation — ask the developer before continuing."
     - add the corresponding DB migration task (Flyway/Liquibase) if not already present
@@ -339,9 +284,6 @@ this step entirely.
 ---
 
 ## Step 3 — Next steps
-
-Tell the user: `Step 3: Handing off the plan...`
-
 After creating the file, tell the user: "created plan: `docs/plans/yyyymmdd-<task-name>.md`"
 
 Then ask via the structured-question tool (or a numbered list as fallback):
@@ -404,8 +346,8 @@ This ensures each task is solid before building on top of it.
 
 ## Key principles
 
-- **One question at a time** — do not overwhelm the user with multiple questions in a single message.
-- **Multiple choice preferred** — easier to answer than open-ended when possible.
+- Ask only unresolved, material questions; batch independent decisions into one round and use a structured-question tool when available, with a numbered text fallback.
+- Multiple choice is useful when options are genuinely bounded; use plain text for free-form answers.
 - **DRY, YAGNI ruthlessly** — avoid unnecessary duplication and features, keep scope minimal (but prefer
   duplication over premature abstraction when it reduces coupling).
 - **Lead with a recommendation** — have an opinion and explain why, but let the user decide.
@@ -414,6 +356,10 @@ This ensures each task is solid before building on top of it.
   coupling) or abstraction (DRY but adds complexity)? Explain the trade-offs before deciding.
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

@@ -4,7 +4,7 @@
 |-------------|----------|-------|-----------|
 | quarkus-rest-jackson | io.quarkus | implementation | always (JSON serialization) |
 | quarkus-hibernate-orm-panache | io.quarkus | implementation | always (synchronous Panache) |
-| quarkus-hibernate-validator | io.quarkus | implementation | when `@Valid` is generated (`hasValidation`) |
+| quarkus-hibernate-validator | io.quarkus | implementation | when `@Valid` is generated (`hasValidation`) OR any PATCH/PATCH_MANY is generated (required `Validator`) |
 | quarkus-mapstruct | io.quarkiverse.mapstruct | implementation | when DTO mode uses MapStruct |
 | mapstruct | org.mapstruct | compile (annotation API) | when DTO mode uses MapStruct |
 | mapstruct-processor | org.mapstruct | annotation processor (maven-compiler-plugin annotationProcessorPaths / Gradle annotationProcessor) | when DTO mode uses MapStruct |

@@ -1,18 +1,18 @@
 # Running tests with Maven
 
-## 1. The two plugins, two phases
+## 1. Surefire and Failsafe are separate runners/phases
 
 | Type | Plugin | Phase | Command |
 |---|---|---|---|
 | `unit` + `quarkus` (`@QuarkusTest`) | surefire | `test` | `./mvnw test` |
-| `integration` (`@QuarkusIntegrationTest`, `*IT.java`) | failsafe | `verify` (`integration-test` + `verify`) | `./mvnw verify -DskipITs=false` |
-| `all` | both | two sequential phases | `./mvnw clean test`, then `./mvnw verify -DskipITs=false` |
+| `integration` (`@QuarkusIntegrationTest`, `*IT.java`) | failsafe | `verify` (`integration-test` + `verify`; check whether Surefire also runs) | `./mvnw verify -DskipITs=false` |
+| `all` | Surefire + Failsafe in separate lifecycle phases | `./mvnw clean verify -DskipITs=false` only after confirming target-module bindings and test naming |
 
-`@QuarkusIntegrationTest` tests are black-box: they launch the artifact the build produced
-(`target/quarkus-app/quarkus-run.jar`, a native binary with `-Dnative`, or a container image) and test
-it over HTTP. CDI injection, `@InjectMock`, and config overrides do not exist there — if the user
-expects to inject a bean inside an `*IT` test, that is a design error to point out, not something to
-make work.
+`@QuarkusIntegrationTest` tests are black-box: they launch the packaged artifact (production profile/config)
+and test public interfaces. CDI injection, `@InjectMock`, and test-process config overrides do not configure
+the packaged application. Surefire and Failsafe are distinct runners/phases, but one `mvn verify` invocation
+can run both; that is not an invalid mixed test process. Generated Quarkus 3.20.3 Maven configuration
+defaults `skipITs` to true; `-DskipITs=false` enables Failsafe.
 
 ## 2. Narrow the run
 
@@ -24,13 +24,15 @@ make work.
 | JUnit 5 tag | `-Dgroups=unit` / `-DexcludedGroups=quarkus` (only if the project actually tags tests — confirm with a grep for `@Tag`) |
 | module (multi-module build) | `-pl order-service` (add `-am` when the module needs its siblings built) |
 
-`-Dtest` is surefire's, `-Dit.test` is failsafe's — mixing them silently runs the wrong scope.
+`-Dtest` is Surefire's, `-Dit.test` is Failsafe's — mixing them silently runs the wrong scope. An IT-only request may still execute Surefire tests during `verify`; report them if they ran rather than silently claiming integration-only.
 
-Useful switches: `-DskipTests` (compile, run nothing), `-DskipITs` (skip only the integration phase),
-`-Dnative` (build + test the native image — slow, GraalVM required).
+Useful switches: `-DskipTests` skips test execution and is not a universal way to isolate ITs;
+`-DskipITs=false` enables generated Failsafe config where confirmed. `-Dnative` requires the project's
+native profile; otherwise use a verified `quarkus.native.enabled` configuration and confirm build setup.
 
-Plain unit tests and `@QuarkusTest` tests both live in `src/test/java` and both run under surefire, so
-Maven cannot separate them by flag alone — separate by class pattern or by `@Tag`.
+Plain unit tests and `@QuarkusTest` tests both live in `src/test/java` and run under Surefire; separate by
+class pattern or `@Tag` only when actual test tags/config support it. Failsafe integration tests run in
+their own phase. `verify` may run Surefire as well as Failsafe; report every phase and count that ran.
 
 ## 3. Surefire's Quarkus settings
 
@@ -63,7 +65,7 @@ otherwise a short note in the conversation. Example shape:
 Maven test commands (resolved <YYYY-MM-DD>):
 - quarkus        -> ./mvnw test
 - integration    -> ./mvnw verify -DskipITs=false
-- all            -> ./mvnw clean test, then ./mvnw verify -DskipITs=false
+- all            -> ./mvnw clean verify -DskipITs=false (after confirming module Surefire/Failsafe config)
 - order module / quarkus -> ./mvnw test -pl order-service
 ```
 

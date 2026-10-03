@@ -1,20 +1,19 @@
 # Build modes — command matrix
 
 All commands assume the project root (where `pom.xml` / `build.gradle` lives). `./mvnw` and `./gradlew`
-are the wrappers — use them, not a globally installed `mvn`/`gradle`.
+are the wrappers — prefer them when present. If the wrapper is absent, inspect the installed Maven/Gradle version and use it only if available; otherwise report NOT RUN/blocker.
 
 ## Mode matrix
 
 | Mode | Maven | Gradle | Quarkus CLI |
 |---|---|---|---|
-| fast-jar (default) | `./mvnw quarkus:build` | `./gradlew quarkusBuild` | `quarkus build` |
-| uber-jar | `./mvnw package -Dquarkus.package.type=uber-jar` | `./gradlew build -Dquarkus.package.type=uber-jar` | `quarkus build -Dquarkus.package.type=uber-jar` |
-| native (local GraalVM/Mandrel) | `./mvnw package -Dnative` | `./gradlew build -Dquarkus.native.enabled=true` | `quarkus build --native` |
-| native (container build) | `./mvnw package -Dnative -Dquarkus.native.container-build=true` | `./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` | `quarkus build --native -Dquarkus.native.container-build=true` |
-| native + container image | `./mvnw package -Dnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true` | same flags on `./gradlew build` | `quarkus build --native -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true` |
+| fast-jar (default) | `./mvnw package` | `./gradlew build` | `quarkus build` |
+| uber-jar | `./mvnw package -Dquarkus.package.jar.type=uber-jar` | `./gradlew build -Dquarkus.package.jar.type=uber-jar` | `quarkus build -Dquarkus.package.jar.type=uber-jar` |
+| native (local GraalVM/Mandrel) | `./mvnw package -Dquarkus.native.enabled=true` | `./gradlew build -Dquarkus.native.enabled=true` | `quarkus build --native` |
+| native (container build) | `./mvnw package -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` | `./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` | `quarkus build --native -Dquarkus.native.container-build=true` |
+| native + container image | `./mvnw package -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true` | same flags on `./gradlew build` | `quarkus build --native -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true` |
 
-`-Dnative` is shorthand for `-Dquarkus.native.enabled=true`; prefer the long form in Gradle commands
-(the short form also works, but the long form is unambiguous in a build file context).
+For Quarkus 3.20.3, Maven `-Dnative` is usable only when the project defines its native profile. Otherwise use `-Dquarkus.native.enabled=true`. Gradle uses the long property. Do not generalize old packaging aliases across versions without checking that target release.
 
 ## Outputs
 
@@ -26,7 +25,7 @@ are the wrappers — use them, not a globally installed `mvn`/`gradle`.
 | container image | local image `<group>/<name>:<tag>` (defaults: artifact name + `1.0.0-SNAPSHOT`-style project version) |
 
 Never report an artifact path without checking it exists — the jar/native names come from the project's
-final name, not from this file.
+final name, not from this file. A file left by an earlier run is not evidence that the current command produced a fresh artifact.
 
 ## Native specifics
 
@@ -42,9 +41,7 @@ final name, not from this file.
 
 ## Tests during the build
 
-- Maven: tests run by default in `package`. Skip when the user wants the artifact quickly:
-  `-DskipTests` (compile, run nothing). Integration tests need the failsafe phase (`verify`), not
-  plain `package`.
+- Maven: ordinary tests may run in `package` according to the actual Surefire binding. The generated Quarkus 3.20.3 POM defaults Failsafe ITs to skipped; `verify -DskipITs=false` enables them when that binding/naming is confirmed. `verify` can run Surefire and Failsafe in separate phases of one Maven invocation. `-DskipTests` skips test execution broadly; never use it as a universal IT-only isolation switch.
 - Gradle: `build` runs `test`; skip with `-x test` (or `-x quarkusIntTest` if that task exists).
 - Skipping tests is a decision, not a default — if it happens, the report must say so. To run
   `@QuarkusIntegrationTest` against the packaged artifact afterwards, use the `quarkus-run-tests` skill.
@@ -77,7 +74,7 @@ without a successful rerun.
 
 ## Build in a multi-module project
 
-Build from the root (`./mvnw package -Dnative`) so the whole reactor runs, unless the user targets a
-module: `./mvnw package -Dnative -pl order-service -am` (Maven) / `./gradlew :order-service:build`
+Build from the root (`./mvnw package -Dquarkus.native.enabled=true`) so the whole reactor runs, unless the user targets a
+module: `./mvnw package -Dquarkus.native.enabled=true -pl order-service -am` (Maven) / `./gradlew :order-service:build`
 (Gradle, with `-D` flags as needed). Mixed-module reactors can fail on a module that is not a Quarkus
 app — check whether the failure is in the application module before blaming native compilation.

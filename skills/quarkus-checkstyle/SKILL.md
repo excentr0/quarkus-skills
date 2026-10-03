@@ -22,6 +22,9 @@ rewriting their files.
 
 ## Preflight — project detection
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: file tools plus shell commands — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
@@ -76,7 +79,6 @@ Drop any question the conversation already answers.
 
 ## Step 0 — Conversation context first (REQUIRED, no tool calls)
 
-Tell the user: `Step 0/5: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -88,7 +90,6 @@ jobs — the report comes first.
 
 ## Step 1 — Gather context
 
-Tell the user: `Step 1/5: Gathering context...`
 
 Read: the build file (plugins section), any existing checkstyle config and suppression files, and the
 last result file if present. Then state the findings in three lines:
@@ -104,7 +105,6 @@ last result file if present. Then state the findings in three lines:
 
 ## Step 2 — Add plugin and ruleset (Path B only)
 
-Tell the user: `Step 2/5: Adding Checkstyle...`
 
 Take the build-file block from examples (never write it from memory):
 
@@ -124,7 +124,6 @@ Never pin a plugin or Checkstyle version blindly — see the note in the Maven e
 
 ## Step 3 — Run the check
 
-Tell the user: `Step 3/5: Running Checkstyle...`
 
 Follow the reference for the project's build tool: [`references/maven.md`](references/maven.md) or
 [`references/gradle.md`](references/gradle.md). Report-only and gate commands differ — run the one the
@@ -136,7 +135,6 @@ If the build tool downloads the Checkstyle engine on first run, that is expected
 
 ## Step 4 — Report violations
 
-Tell the user: `Step 4/5: Reporting violations...`
 
 Parse the result XML as described in [`references/report.md`](references/report.md) and present the
 compact summary: total count, count per rule, one example `file:line` per rule, and the result file path
@@ -148,7 +146,6 @@ Zero violations is a valid, good outcome — say "0 violations" plainly rather t
 
 ## Step 5 — Fix violations (only when asked)
 
-Tell the user: `Step 5/5: Fixing violations...`
 
 Work rule class by rule class, smallest diff first:
 
@@ -162,6 +159,10 @@ Work rule class by rule class, smallest diff first:
 5. Finish with the final count and what was suppressed.
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

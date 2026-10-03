@@ -27,7 +27,7 @@ artifacts — no explicit version needed).
 | Goal | Maven |
 |---|---|
 | JVM image (fast-jar inside) | `./mvnw package -Dquarkus.container-image.build=true` |
-| Native image | `./mvnw package -Dnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true` |
+| Native image | `./mvnw package -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true` |
 | Push to a registry | add `-Dquarkus.container-image.push=true` (registry credentials come from the standard Docker/Podman config; the container-image guide documents the explicit credential properties — check it before naming any key) |
 
 Gradle and the CLI accept the same `-Dquarkus.container-image.*` flags.

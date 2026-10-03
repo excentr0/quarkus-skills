@@ -35,10 +35,8 @@ Notes:
 
 ## Sanity check after starting
 
-1. The process prints a startup line with a time — native startup is typically tens of milliseconds,
-   JVM startup a few hundred; both are fine.
-2. Hit a known endpoint: `/q/health` when `quarkus-smallrye-health` is present (it returns
-   `{"status":"UP"}`), otherwise any real route of the app.
+1. Record the startup line and elapsed time only as actually observed; do not infer or promise a fixed startup duration.
+2. Hit a route confirmed from the application source. Use `/q/health` only when the health extension and route are confirmed.
 3. Stop it afterwards unless the user asked to keep it running — do not leave orphaned processes behind
    from a build task.
 

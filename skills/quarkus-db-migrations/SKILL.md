@@ -12,6 +12,9 @@ description: >
 
 # Preflight — Project detection (before step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP
 server or IDE integration is required.
 
@@ -113,7 +116,6 @@ default and proceed.
 
 ## Step 0 — Read the request (no tools)
 
-Tell the user: `Step 0/6: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -138,7 +140,6 @@ Output:
 
 ## Step 1 — Detect the tool and its conventions
 
-Tell the user: `Step 1/6: Detecting migration setup...`
 
 Read-only discovery; do not write anything yet:
 
@@ -167,7 +168,6 @@ If no migration setup exists at all — go to Step 2. Otherwise skip Step 2.
 
 ## Step 2 — Choose the tool (only when the project has none)
 
-Tell the user: `Step 2/6: Choosing the migration tool...`
 
 Default to **Flyway** and say why: plain SQL files, minimal configuration, the smallest moving part
 for a Quarkus app. Choose **Liquibase** instead when the project already contains a changelog
@@ -180,7 +180,6 @@ extension). Never set up both tools.
 
 ## Step 3 — Add the extension (when missing)
 
-Tell the user: `Step 3/6: Adding the migration extension...`
 
 Use the snippets in [`examples/dependencies.md`](examples/dependencies.md). For a missing Quarkus
 extension, use the command matching the detected build tool so the build file stays consistent:
@@ -197,7 +196,6 @@ extension does not bring one.
 
 ## Step 4 — Create the migration file
 
-Tell the user: `Step 4/6: Creating the migration...`
 
 Rules:
 
@@ -218,7 +216,6 @@ variant matching the db kind and the change type, and fill the `${variables}`.
 
 ## Step 5 — Wire the configuration
 
-Tell the user: `Step 5/6: Updating the detected config file...`
 
 Use [`examples/properties.md`](examples/properties.md) for `.properties`; translate its keys into
 nested YAML for `.yaml`/`.yml`. If the format or authoritative file is unresolved, stop instead of
@@ -238,7 +235,6 @@ writing the wrong syntax:
 
 ## Step 6 — Verify and report
 
-Tell the user: `Step 6/6: Verifying...`
 
 Prove the migration applies — do not report success on "file written" alone:
 
@@ -256,6 +252,10 @@ Report: migration file path + version, tool, config keys added, verification res
 with the error), and any baseline caveat.
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

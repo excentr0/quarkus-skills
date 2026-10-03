@@ -2,7 +2,6 @@
 
 ## Step 1 -- Gather minimal project context (automatic, no questions)
 
-Tell the user: `Step 1/6: Gathering project context...`
 
 Read only the files whose content is **actually consumed** by a later step. Do not pre-read
 "in case we need it" — every variable here must have a concrete downstream user.

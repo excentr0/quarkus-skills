@@ -1,7 +1,7 @@
 # Detect Entity Conventions
 
 Follow substeps 1.1 → 1.2 → 1.3 → 1.4 → 1.5 in order. Do not skip or reorder them.
-Tell the user which substep you are on while running them: `Step 1.1/1.5: Finding existing entities...`.
+Use the following source-gathering steps internally; do not narrate each substep.
 
 ---
 
@@ -12,9 +12,9 @@ Pick 2–3 representative ones and read their source files in full.
 
 ---
 
-## Step 1.2: Score each convention
+## Step 1.2: Resolve conventions from source evidence
 
-For each convention below, determine the answer from the code and assign a confidence score (1–100):
+For each convention below, follow a consistent pattern in the nearest relevant source. If examples are absent, use its documented default. If sources conflict on behavior, security, or persistence, ask once or stop before generating code; do not assign subjective confidence scores:
 
 Panache style:
 
@@ -58,7 +58,7 @@ General conventions:
 - **Single-result return style** — `Optional<Entity>` via `firstResultOptional()` or a nullable result via
   `firstResult()`? Default: `Optional`
 
-equals & hashCode conventions (score separately):
+equals & hashCode conventions:
 
 - **equals/hashCode style** — manual proxy-safe implementation, id-based implementation, or none at all?
   Default: none — do not generate them unless the project has them or the user asks. If the project has
@@ -66,21 +66,16 @@ equals & hashCode conventions (score separately):
   [`entity-rules-impl.md`](entity-rules-impl.md)
 - **Fields included** — `id` only, or a business/natural key? Default: `id` only
 
-toString conventions (score separately):
+toString conventions:
 
 - **toString style** — manual override, Lombok-generated, or none? Default: none unless the project has them
 - **toString fields** — if manual: all local (non-relation) fields, relations never included
 
 ---
 
-## Step 1.3: Collect uncertain conventions
+## Step 1.3: Resolve material conflicts
 
-Score confidence only for conventions where the code contains relevant examples but the pattern is ambiguous
-or inconsistent. If a convention is simply absent from the code (e.g. no `@ManyToOne` exists yet, no
-equals/hashCode anywhere) — confidence is high, use the default without asking.
-
-Collect all conventions where confidence < 80. For each, formulate a question with explicit answer options;
-put the default value first (marked as "Recommended").
+Ask only about source conflicts that affect behavior, security, or persistence. For absent conventions, use the documented default. For stylistic conventions, follow the nearest consistent source; no numeric confidence rating is used.
 
 ---
 

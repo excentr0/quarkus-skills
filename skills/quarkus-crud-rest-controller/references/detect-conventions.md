@@ -12,11 +12,9 @@ For each convention below, note what the code actually shows.
 
 ---
 
-## Step 1.2: Score each convention
+## Step 1.2: Resolve conventions from evidence
 
-For each convention, determine the answer from the code and assign a confidence score (1–100).
-If a convention is simply absent from the code (e.g. no paginated endpoint exists yet) — the
-confidence is high (90): use the default without asking.
+Follow a consistent pattern in the nearest relevant source. If there is no relevant example, use the documented default. If sources conflict on behavior, persistence, or security, ask one focused question or stop before generating code; do not invent a numeric confidence score.
 
 General conventions:
 
@@ -30,22 +28,22 @@ General conventions:
 - **Response wrapper** — do endpoints return raw entities/DTOs, or a wrapper (`Response`, page record, `X-Total-Count`)? Default: raw entity/DTO; `X-Total-Count` only when the user asks
 - **Validation placement** — `@Valid` on resource method parameters, or validation only inside services? Default: `@Valid` on the resource parameter when the type has constraints
 
-Persistence & transactions (score separately):
+Persistence & transactions:
 
 - **Repository pattern** — `PanacheRepository` / `PanacheRepositoryBase` beans, Active Record statics, or both? Default: `PanacheRepository`
 - **Repository annotation** — `@ApplicationScoped` present on repositories? Default: yes
 - **Transaction placement** — `@Transactional` on resource methods, on `@ApplicationScoped` service beans, or both? Default: on resource methods for this skill
 - **Service layer** — does the project route writes through a service bean instead of the resource? Default: no service layer for CRUD
 - **Delete semantics** — returns the deleted entity (default), returns 204 No Content, or soft delete? Default: return the deleted entity
-- **Patch strategy** — Jackson `ObjectMapper` merge (the only strategy in this skill); does the project use a different convention (e.g. dedicated PATCH DTO)? Default: `ObjectMapper.readerForUpdating`
+- **Patch strategy** — use the safe allowlist-based PATCH contract in this skill; never deserialize arbitrary JSON into a managed entity. Follow an existing dedicated PATCH DTO only when compatible with that contract; otherwise stop and resolve the conflict.
 
-Error handling conventions (score separately):
+Error handling conventions:
 
 - **Not-found handling** — `jakarta.ws.rs.NotFoundException` thrown directly, or mapped through `@ServerExceptionMapper`? Default: throw `NotFoundException`
 - **Exception mapper presence** — is there a global `@ServerExceptionMapper` bean that turns exceptions into an error body? If yes, still throw `NotFoundException`; the mapper shapes the response
 - **Error body shape** — what do existing error responses look like? Report it, do not invent one
 
-DTO conventions (score separately — only relevant when DTO mode is selected):
+DTO conventions (only relevant when DTO mode is selected):
 
 - **DTO style** — `record` vs plain class. Default: record
 - **DTO naming** — `XxxDto`, `XxxRestDto`, `XxxResponse`? Default: `{EntityName}Dto`
@@ -55,17 +53,15 @@ DTO conventions (score separately — only relevant when DTO mode is selected):
 
 ---
 
-## Step 1.3: Collect uncertain conventions
+## Step 1.3: Resolve material conflicts
 
-Collect all conventions where confidence < 80. For each, formulate a question with explicit
-answer options; put the default value first (marked as "Recommended").
+Ask once about a conflict only when it affects behavior, security, persistence, or the requested API. For cosmetic choices, follow the nearest relevant consistent source; when examples are absent, use the listed default.
 
 ---
 
 ## Step 1.4: Ask developer
 
-If there are any uncertain conventions from step 1.3, ask the developer with the harness's
-structured-question tool — combine all questions into a single call (max 4 questions per call).
+If a material conflict remains, ask one concise batched question using a structured-question tool when available; otherwise use a numbered text list and wait. Do not ask about resolved values.
 
 Example question shape:
 

@@ -14,6 +14,9 @@ description: >-
 
 # Preflight — Project detection (before step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP
 server or IDE integration is required.
 
@@ -99,7 +102,6 @@ Never ask a question the user already answered, even implicitly.
 
 ## Step 0 — Read the request
 
-Tell the user: `Step 0/5: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -119,10 +121,8 @@ injection style in Step 3.
 
 ## Step 1 — Detect the project's config style
 
-Tell the user: `Step 1/5: Detecting config style...`
 
-From the preflight, score each convention (1–100) and use the project's own style when the score is
-high:
+Resolve each convention from the nearest consistent project evidence. If examples are absent, use the documented default; ask once only when conflicting evidence changes runtime behavior. Do not assign numeric confidence scores:
 
 | Convention | Default when absent |
 |---|---|
@@ -138,7 +138,6 @@ If the project has no existing config code at all, use the defaults — do not a
 
 ## Step 2 — Choose the config style
 
-Tell the user: `Step 2/5: Choosing the config style...`
 
 Follow [`references/config-mapping.md`](references/config-mapping.md) for the decision rules:
 
@@ -156,7 +155,6 @@ feature's prefix/name, or a mapping-vs-property disagreement with an existing pr
 
 ## Step 3 — Generate config code and properties
 
-Tell the user: `Step 3/5: Generating configuration...`
 
 Write to the config file selected in preflight. Use the properties examples unchanged for
 `application.properties`; for `application.yaml`/`application.yml`, translate each key into the
@@ -182,7 +180,6 @@ Then wire the values into the consuming component:
 
 ## Step 4 — Profiles and secrets
 
-Tell the user: `Step 4/5: Applying profiles...`
 
 Follow [`references/profiles.md`](references/profiles.md):
 
@@ -198,7 +195,6 @@ Follow [`references/profiles.md`](references/profiles.md):
 
 ## Step 5 — Verify the configuration is live
 
-Tell the user: `Step 5/5: Verifying...`
 
 Prove the values actually reach the application — pick what the project supports:
 
@@ -214,6 +210,10 @@ resolved values; redact any secret as `[REDACTED]`. If verification was skipped,
 Never claim a value is live without having seen its status.
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

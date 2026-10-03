@@ -15,6 +15,9 @@ description: >
 
 # Preflight — Project detection (before step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP server
 or IDE integration is required.
 
@@ -182,7 +185,6 @@ context checklist before Steps 2–3.
 
 ## Step 1 -- Gather context (automatic, no questions)
 
-Tell the user: `Step 1/5: Gathering project context...`
 
 Call **file tools** (in parallel where possible). Do NOT call MCP tools.
 
@@ -215,7 +217,6 @@ Call **file tools** (in parallel where possible). Do NOT call MCP tools.
 
 ## Step 2 -- Authentication type
 
-Tell the user: `Step 2/5: Choosing authentication type...`
 
 Read [`references/variant-selection.md`](references/variant-selection.md) for the authentication
 matrix. Select OIDC bearer, OIDC web-app/code flow, or MP-JWT from explicit user intent/context; ask
@@ -225,7 +226,6 @@ only when the type is genuinely unresolved.
 
 ## Step 3 -- Variant-specific questions (inline)
 
-Tell the user: `Step 3/5: Collecting variant settings...`
 
 Read [`references/variant-selection.md`](references/variant-selection.md) for the selected variant's
 question matrix and ask only unresolved settings. **NEVER ask the user for credentials**; use the inline
@@ -235,7 +235,6 @@ secret-handling rules above.
 
 ## Step 4 -- Generate configuration
 
-Tell the user: `Step 4/5: Generating configuration...`
 
 **No class is generated.** Quarkus security is configuration (properties) plus annotations
 on existing resources. Do not create new Java classes unless the user explicitly asks for a
@@ -294,7 +293,6 @@ custom mechanism (out of scope — ask instead).
 
 ## Step 5 -- Dependencies & properties (automatic)
 
-Tell the user: `Step 5/5: Adding dependencies and properties...`
 
 1. Read [`examples/_dependencies/oidc.md`](examples/_dependencies/oidc.md) (variants 1–2) or
    [`examples/_dependencies/smallrye-jwt.md`](examples/_dependencies/smallrye-jwt.md) (variant 3)
@@ -316,6 +314,10 @@ Tell the user: `Step 5/5: Adding dependencies and properties...`
    itself** — secrets must not enter the conversation history.
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

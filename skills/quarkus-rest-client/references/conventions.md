@@ -1,7 +1,7 @@
 # Conventions — REST clients in this project
 
 Detected in Step 1 from the existing code; every convention below is resolved to either the
-project's own pattern or the stated default. Confidence < 80 → ask in Step 2.
+project's own consistent pattern or the stated default when examples are absent. Ask in Step 2 only when conflicting evidence materially affects behavior or security; do not assign confidence scores.
 
 ## Detection commands (file tools)
 
@@ -16,7 +16,7 @@ project's own pattern or the stated default. Confidence < 80 → ask in Step 2.
 | DTO types | response types of existing clients + project DTO package (`.dto`, `.rest.dto`) |
 | error handling | callers of existing clients: do they catch/wrap client exceptions? |
 
-## Scoring
+## Source evidence and defaults
 
 | Convention | Default when the project has no example | Ask when |
 |---|---|---|

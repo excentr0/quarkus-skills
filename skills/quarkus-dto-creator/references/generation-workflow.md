@@ -2,7 +2,6 @@
 
 ## Step 6 — Generate code
 
-Tell the user: `Step 6/7: Generating DTO...`
 
 1. Determine the target path: `src/main/java/${packagePath}/${className}.java`.
 
@@ -31,7 +30,7 @@ Tell the user: `Step 6/7: Generating DTO...`
    - `${className}` → from the user or the default `${EntityName}Dto`
    - field-level variables → from the entity source (Step 2)
    - **NEVER substitute anything not listed in Variables**
-   - **NEVER add imports, methods, or code not in the example**
+   - Use examples for framework/API call shapes; adapt imports, package/type names, and source-backed field/accessor code to the project and request. Never invent framework APIs; verify an uncovered required API from an applicable official source or stop.
    - **FQN handling (CRITICAL):** examples contain FQNs (e.g. `java.util.List`,
      `jakarta.validation.constraints.NotNull`). When writing the final file, you MUST:
      1. Replace every FQN in the body with its **short name**
@@ -44,12 +43,7 @@ Tell the user: `Step 6/7: Generating DTO...`
         shape: top-level class, top-level record, nested static class, nested record, and separate-file
         sub-DTO (`NEW_CLASS`). There is no asymmetry. Always shorten the entity reference and always add
         the corresponding `import` line (unless the entity is in the same package).
-     6. **Group imports** in two blocks separated by ONE blank line:
-        - **Block 1** — all third-party / project imports together: `jakarta.*`, `com.fasterxml.*`,
-          `org.hibernate.*`, project packages, etc. (alphabetical inside the block).
-        - **(blank line)**
-        - **Block 2** — `java.*` and `javax.*` (alphabetical).
-        Do NOT split block 1 into per-package sub-blocks.
+     6. Follow the existing import ordering/grouping in representative files from the target package. If the project has no convention, use valid, non-duplicate imports grouped consistently; do not force a layout that conflicts with the project.
      The final file must contain short names in the body (including every Javadoc `{@link …}`) and a
      clean, grouped import block at the top.
 
@@ -75,7 +69,7 @@ If `persistenceMode = reactive` (`quarkus-hibernate-reactive-panache` in the bui
 - The **DTO shape does not change** — the same records/classes, the same generation order.
 - Entity loading APIs return `Uni<...>` (`Order.findById(id)` → `Uni<Order>`), so the conversion happens
   inside the reactive chain (`map(...)` / `flatMap(...)`) and resource methods return `Uni<OrderDto>`.
-- Mention this in one line when the mapper delegation happens, so the mapper is used in the reactive
+- Mention this when handing off to the mapper workflow, so the mapper is used in the reactive
   pipeline rather than on a blocking path.
 
 ---

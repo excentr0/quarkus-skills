@@ -7,15 +7,14 @@ Two parts: **detection** (substeps 2.1–2.5 — run them before writing code) a
 
 # Part A — Detection
 
-Tell the user which substep you are on while running them: `Step 2.1/2.5: Finding existing repositories...`.
+
 
 ## Step 2.1: Find existing repositories
 
 Grep for `PanacheRepository` across `src/main/java`. Pick 2–3 representative classes and read them in full.
-If none exist (the project uses Active Record only), score the "repository style" convention as absent —
-confidence is high, use the defaults, and skip to Part B when a repository is actually needed.
+If none exist, record that fact and use the documented default if a repository is needed; do not treat absence as a score or infer an implementation style for unrelated code.
 
-## Step 2.2: Score each convention
+## Step 2.2: Resolve conventions from source evidence
 
 - **Base interface** — `PanacheRepository<Entity>` (fixes the ID type to `Long`) or
   `PanacheRepositoryBase<Entity, ID>` (custom ID type, e.g. `UUID`)? Default: match the entity's id type —
@@ -34,20 +33,16 @@ confidence is high, use the defaults, and skip to Part B when a repository is ac
 - **Pagination exposure** — repository returns a `PanacheQuery<Entity>` for the caller to page, or takes page
   parameters and returns a list? Default: match the project; if none exists — return `PanacheQuery` for list
   endpoints and let the resource apply `Page.of(index, size)`
-- **Native/named queries** — does the project use native queries (`#` prefix / `@NamedQuery`) alongside
+- **Named queries** — does the project use registered names (`@NamedQuery`, invoked from Panache with a `#` prefix) alongside
   PanacheQL? Default: no — PanacheQL only, unless the project already does otherwise
 
-## Step 2.3: Collect uncertain conventions
+## Step 2.3: Resolve material conflicts
 
-Score confidence only for conventions where the code contains relevant examples but the pattern is ambiguous
-or inconsistent. If a convention is absent from the code — confidence is high, use the default without asking.
-Collect all conventions where confidence < 80.
+Follow a consistent pattern in the nearest relevant source; if examples are absent, use the documented default. Ask once or stop only for conflicts that change behavior or persistence. Do not use numeric confidence scores.
 
 ## Step 2.4: Ask developer
 
-If there are uncertain conventions from step 2.3, ask the developer in a single prompt — use your harness's
-structured-question tool (e.g. `AskUserQuestion` / `ask_user_question`); if none is available, fall back to a
-numbered list in plain text.
+If a material conflict remains, ask once using a structured-question tool when available; otherwise use a numbered plain-text list.
 
 Example shape — adapt to what you actually found:
 

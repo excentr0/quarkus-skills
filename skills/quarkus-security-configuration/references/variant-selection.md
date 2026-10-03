@@ -34,7 +34,6 @@ Just internalize what the user already said before proceeding to Step 1.
 
 ## Step 2 -- Authentication type
 
-Tell the user: `Step 2/5: Choosing authentication type...`
 
 Ask (skip if answered in Step 0):
 
@@ -58,7 +57,6 @@ applications acting as their own authorization server, custom authentication mec
 
 ## Step 3 -- Variant-specific questions (inline)
 
-Tell the user: `Step 3/5: Collecting variant settings...`
 
 Read the mapped reference file and follow its question flow.
 Only asked if the user did NOT say "all defaults".

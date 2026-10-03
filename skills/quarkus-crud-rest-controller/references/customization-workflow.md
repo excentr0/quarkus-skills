@@ -2,7 +2,16 @@
 
 ## Step 4 -- DTO and customization questions
 
-Tell the user: `Step 4/6: Resolving DTO and customization...`
+
+### Method selection
+
+Resolve `selectedMethods` before DTO/mapper resolution. Use caller choices and context first; ask only if unresolved.
+
+| Question | Header | Options (first = recommended) |
+|----------|--------|-------------------------------|
+| Which CRUD methods to generate? | Methods | Full CRUD (Recommended): GET_LIST, GET_ONE, GET_MANY, CREATE, PATCH, PATCH_MANY, DELETE, DELETE_MANY / Standard CRUD: GET_LIST, GET_ONE, CREATE, PATCH, DELETE / Read-only: GET_LIST, GET_ONE / Custom: select individual methods |
+
+Store `selectedMethods`; downstream mapper requirements are derived from this set, never assumed in advance.
 
 By Step 0 you may already know the DTO mode if the user mentioned it (e.g. "with DTO", "without
 DTO", "use entity directly", "map to ProductDto"). If so, skip the question and proceed.
@@ -27,18 +36,16 @@ entity.
 - `toEntityMethodName` -- mapper method DTO-->entity (default: `toEntity`)
 - `updateEntityMethodName` -- mapper method that copies a DTO into an existing entity (default per quarkus-mapper-creator: `partialUpdate`)
 
-Warn: CREATE, PATCH and PATCH_MANY require the mapper to have `toEntity` and
-`updateEntityMethodName` (the latter copying into an existing entity) methods in addition to `toDtoMethodName`.
-quarkus-mapper-creator generates exactly this set with its defaults — keep the method names
-consistent between the two skills.
+Derive `requiredMethods` only for selected operations: CREATE needs `toEntity` when it consumes a DTO (and `toDtoMethodName` only if its actual response path returns a DTO); PATCH/PATCH_MANY need `toDtoMethodName` and `updateEntityMethodName`. Do not require the update method for unselected PATCH operations. The standalone mapper default is `partialUpdate=false`; never claim otherwise or change that default. For PATCH, hand off entity/DTO FQNs, accessors, mutable scalar fields/types, null semantics, exact required method names, and the safe strategy (`SET_TO_NULL` plus explicit mutable-only mappings). Preserve caller-approved inputs without re-asking. Check existing mapper callbacks/custom logic for protected-field mutation; stop if safety is uncertain.
 
-**If no DTO exists for the entity:** delegate to the `quarkus-dto-creator` skill to create one.
+For PATCH/PATCH_MANY derive the allowlist from entity and DTO sources; exclude id, version, server-managed fields and associations. Ask only about materially ambiguous mutable fields/null semantics. Unsupported field types stop generation.
+
+If no DTO exists for the entity, apply the `quarkus-dto-creator` workflow to create it. Skill activation does not authorize a subagent: mechanically hand off only when the caller/operator and environment permit delegation; otherwise read and follow the skill directly.
 That skill handles DTO generation and can hand off to `quarkus-mapper-creator` for the mapper
 (conversion is inevitable for a REST resource). After both are created, return here and continue
 with the path settings.
 
-**If DTO exists but no mapper:** delegate to `quarkus-mapper-creator` to create one. After the
-mapper is created, return here and continue.
+**If DTO exists but no mapper:** apply the `quarkus-mapper-creator` workflow with the known entity/DTO contract. Mechanically hand off only when caller/operator and environment permit delegation; otherwise read and follow the skill directly. Then continue here.
 
 ### Path, pagination, filter & sort settings
 
@@ -73,19 +80,5 @@ resource-only writes; if they require a service layer, STOP — no service-layer
 
 **Validation:** only generate `@jakarta.validation.Valid` when `hasValidation` is true AND the
 annotated parameter's class (entity or DTO) actually carries constraints.
-
-### Method selection
-
-By Step 0 you may already know which methods the user wants (e.g. "read-only", "only GET and
-CREATE", "full CRUD"). If so, skip the question.
-
-If unknown, ask with the structured-question tool:
-
-| Question | Header | Options (first = recommended) |
-|----------|--------|-------------------------------|
-| Which CRUD methods to generate? | Methods | Full CRUD (Recommended): GET_LIST, GET_ONE, GET_MANY, CREATE, PATCH, PATCH_MANY, DELETE, DELETE_MANY / Standard CRUD: GET_LIST, GET_ONE, CREATE, PATCH, DELETE / Read-only: GET_LIST, GET_ONE / Custom: select individual methods |
-
-Store the selected method set as `selectedMethods`. Step 5.3 generates only these methods,
-skipping the rest.
 
 ---

@@ -30,20 +30,21 @@ Sibling skills — use the right one:
 
 ## Preflight — project detection
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: file tools plus shell commands — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
 2. **Quarkus presence & version** — Maven: `io.quarkus.platform:quarkus-bom` import; Gradle: `io.quarkus` plugin.
-3. **Test dependencies** — Quarkus extensions `quarkus-junit5` (required for `@QuarkusTest`)
-   and `quarkus-junit-mockito` (`@InjectMock`), plus the ordinary test library
+3. **Test dependencies** — use the Quarkus BOM-matched test extensions. For Quarkus 3.20.3, `quarkus-junit5` is required for `@QuarkusTest`, and `quarkus-junit5-mockito` provides `@InjectMock`; verify the extension name against the project's Quarkus version before adding. Also add the ordinary test library
    `io.rest-assured:rest-assured` for HTTP assertions. Use `add-extension` only for the Quarkus
    extensions; add Rest Assured as a test-scoped Maven/Gradle dependency when it is missing.
-   For example, `./mvnw quarkus:add-extension -Dextensions="quarkus-junit-mockito"` /
-   `./gradlew addExtension --extensions="quarkus-junit-mockito"`.
+   For example (for Quarkus 3.20.3), `./mvnw quarkus:add-extension -Dextensions="quarkus-junit5-mockito"` /
+   `./gradlew addExtension --extensions="quarkus-junit5-mockito"`.
 4. **Test layout** — glob `src/test/java/**/*.java`: `*Test` classes (surefire / `test` task), `*IT`
    classes (failsafe / `quarkusIntTest` task), plain JUnit classes, `@Tag` usage.
-5. **Test config** — `%test.` keys in the detected application config file (`.properties` or YAML), or `@QuarkusTestProfile`
-   classes under `src/test/java`.
+5. **Test config** — `%test.` keys in the detected application config file (`.properties` or YAML), or a class implementing `QuarkusTestProfile` and activated via `@TestProfile(Profile.class)`. Note: `@QuarkusIntegrationTest` uses packaged production configuration, not `src/test/resources` application config.
 
 If there is no Quarkus build file, stop: this skill targets Quarkus projects.
 
@@ -59,7 +60,7 @@ If there is no Quarkus build file, stop: this skill targets Quarkus projects.
 | Assertions | JUnit 5 `Assertions` | project uses AssertJ/Hamcrest — follow the project |
 | HTTP style | rest-assured `given/when/then` | project has its own client helper — follow it |
 | Data cleanup | explicit `@BeforeEach`/`@AfterEach` against the Dev-Service DB | project already has a cleanup base class |
-| Test config | `%test.` properties or a `@QuarkusTestProfile` | — |
+| Test config | `%test.` properties or `QuarkusTestProfile` + `@TestProfile(Profile.class)` | — |
 
 ---
 
@@ -79,7 +80,6 @@ Never ask about naming, package, or assertion style when the project's existing 
 
 ## Step 0 — Conversation context first (REQUIRED, no tool calls)
 
-Tell the user: `Step 0/6: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -90,14 +90,11 @@ Extract from the request: **what** to test (class, endpoint, method), **which be
 
 ## Step 1 — Detect existing test conventions
 
-Tell the user: `Step 1/6: Detecting test conventions...`
 
 Use [`references/conventions.md`](references/conventions.md) for project style and
 [`references/mocking.md`](references/mocking.md) for CDI/unit-test mock boundaries.
 
-Read the project's existing tests (`src/test/java`, pick 2–3 representative classes) and score each
-convention (1–100). For anything below 80 — ask in Step 2's batch; for anything absent from the code
-(e.g. no `@InjectMock` usage anywhere yet) — use the default without asking.
+Read 2–3 representative tests and follow the nearest consistent project convention. If examples are absent, use the stated default. Ask once only if conflicting evidence materially changes test behavior or isolation.
 
 | Convention | Default |
 |---|---|
@@ -105,19 +102,18 @@ convention (1–100). For anything below 80 — ask in Step 2's batch; for anyth
 | Class naming (`XxxTest` / `XxxTests` / `XxxIT`) | `XxxTest` |
 | Method naming (`method_scenario` / descriptive sentence) | `method_scenario_expectedOutcome` |
 | Visibility (package-private vs public test classes) | package-private (JUnit 5 style) |
-| HTTP testing style (rest-assured statics / injected `@TestHTTPEndpoint` / client helper) | rest-assured statics |
+| HTTP testing style (rest-assured statics / `@TestHTTPEndpoint` class/method target or `@TestHTTPResource` URL field / client helper) | rest-assured statics |
 | Assertions (JUnit / AssertJ / Hamcrest matchers) | JUnit 5 |
 | Mocking (`@InjectMock` / plain Mockito / fakes) | `@InjectMock` in `@QuarkusTest`, plain Mockito in unit tests |
 | Data setup (Panache calls / SQL / seed data) | Panache calls in the test |
 | Cleanup (`@AfterEach` deleteAll / `@BeforeEach` truncate / `@Transactional` test methods) | explicit `@AfterEach` delete |
-| Test config (`%test.` keys / `@QuarkusTestProfile` / `@TestResource`) | `%test.` keys |
+| Test config (`%test.` keys / `QuarkusTestProfile` + `@TestProfile` / `@TestResource`) | `%test.` keys |
 | Parameterized tests used | no |
 
 ---
 
 ## Step 2 — Select the test type
 
-Tell the user: `Step 2/6: Selecting the test type...`
 
 Apply the decision table in [`references/test-types.md`](references/test-types.md). The short version:
 
@@ -134,7 +130,6 @@ If Step 1 left open questions — ask them now in one batch. Otherwise state the
 
 ## Step 3 — Generate test code
 
-Tell the user: `Step 3/6: Generating test code...`
 
 Pick the example matching the type:
 
@@ -143,6 +138,7 @@ Pick the example matching the type:
 | REST endpoint via `@QuarkusTest` | [`examples/happy-path-rest-test.md`](examples/happy-path-rest-test.md) |
 | Service with a mocked dependency | [`examples/inject-mock-test.md`](examples/inject-mock-test.md) |
 | Pure logic, plain JUnit 5 | [`examples/unit-test.md`](examples/unit-test.md) |
+| Packaged artifact (`@QuarkusIntegrationTest`) | [`examples/integration-test.md`](examples/integration-test.md) |
 
 Insert point: new file `src/test/java/${testPackage}/${TargetClass}Test.java` (or `...IT.java` for the
 integration type). Fill every `${variable}` from the real sources — read the DTO/entity/resource before
@@ -153,7 +149,6 @@ test.
 
 ## Step 4 — Dependencies and test properties
 
-Tell the user: `Step 4/6: Checking dependencies and test config...`
 
 - Missing Quarkus test extension → add via the detected build tool's extension command (never edit a
   version by hand). Missing ordinary libraries such as `io.rest-assured:rest-assured` → add as a
@@ -162,24 +157,24 @@ Tell the user: `Step 4/6: Checking dependencies and test config...`
 - `@QuarkusIntegrationTest` present but no failsafe configured → the integration tests will not run under
   `./mvnw verify`; note it to the user (running is `quarkus-run-tests`' job).
 - Test-only config → `%test.` keys in the detected application config file (e.g. datasource overrides); a whole variant
-  profile → a `@QuarkusTestProfile` class with `getConfigOverrides()`.
+  profile → a class implementing `QuarkusTestProfile` (activated via `@TestProfile(Profile.class)`) with `getConfigOverrides()`.
 - Never point `%test.` at production services: Dev Services should own infra in tests.
 
 ---
 
 ## Step 5 — Run the tests
 
-Tell the user: `Step 5/6: Running the new tests...`
 
-Hand over to the **`quarkus-run-tests`** skill — do not duplicate command knowledge here. Report its
-result verbatim; a red test means the test or the expectation is wrong — say which one you believe it is,
-do not weaken the assertion to make it green.
+Apply the **`quarkus-run-tests`** workflow — do not duplicate command knowledge here. Report its result verbatim; classify failures as production defects, test defects, contract mismatch, or infrastructure failure. A failing test may expose a production defect: compare behavior to the requested contract, fix production code when it violates that contract, and never weaken a valid assertion just to make the test green.
 
 ---
 
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
+
 ## Step 6 — Anti-hallucination checklist
 
-Tell the user: `Step 6/6: Final check...`
 
 - [ ] The test type follows [`references/test-types.md`](references/test-types.md) — not habit.
 - [ ] Every field name, path, and status code in assertions was read from the real source, not guessed.

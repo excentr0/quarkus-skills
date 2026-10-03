@@ -25,6 +25,9 @@ retry a failed native build "to see if it passes this time".
 
 ## Preflight — project detection
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: file tools plus shell commands — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
@@ -33,7 +36,7 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
    (container mode needs one); `quarkus-amazon-lambda` or similar alters the artifact — if present, say
    so rather than assuming a plain jar.
 4. **Native configuration** — grep the build file and `application.properties` for `quarkus.native.*`
-   (e.g. `quarkus.native.container-build`, `quarkus.native.builder-image`, `quarkus.package.type`).
+   (e.g. `quarkus.native.container-build`, `quarkus.native.builder-image`, `quarkus.package.jar.type`).
    Existing settings override this skill's defaults.
 5. **Container runtime** — needed for native container builds (`-Dquarkus.native.container-build=true`)
    and for the docker/podman image extensions, **not** for Jib. Check with
@@ -41,7 +44,7 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
 6. **Previous artifacts** — `target/quarkus-app/`, `target/*-runner`, `target/*-runner.jar`,
    `build/*-runner` indicate what was built before.
 
-If there is no Quarkus build file, stop: this skill targets Quarkus projects.
+If there is no Quarkus build file, stop only after checking the target module plus root/parent build configuration and inherited Quarkus plugins/BOM. If unresolved, inspect the target module effective model. Prefer the root wrapper with module selection; when no wrapper exists, check installed tool versions, and if no compatible tool is available report a blocker/NOT RUN rather than declaring a valid project non-Quarkus.
 
 ---
 
@@ -49,10 +52,10 @@ If there is no Quarkus build file, stop: this skill targets Quarkus projects.
 
 | Mode | What you get | Maven command | Gradle command |
 |---|---|---|---|
-| **fast-jar** (default) | `target/quarkus-app/` — a directory layout started by `quarkus-run.jar` | `./mvnw quarkus:build` | `./gradlew quarkusBuild` |
-| **uber-jar** | one runnable fat jar `target/*-runner.jar` | `./mvnw package -Dquarkus.package.type=uber-jar` | `./gradlew build -Dquarkus.package.type=uber-jar` |
-| **native** | native executable `target/*-runner` (GraalVM/Mandrel) | `./mvnw package -Dnative` | `./gradlew build -Dquarkus.native.enabled=true` |
-| **native, container build** | native executable built inside a builder container (no local GraalVM needed) | `./mvnw package -Dnative -Dquarkus.native.container-build=true` | `./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` |
+| **fast-jar** (default) | `target/quarkus-app/` — a directory layout started by `quarkus-run.jar` | `./mvnw package` | `./gradlew build` |
+| **uber-jar** | one runnable fat jar `target/*-runner.jar` | `./mvnw package -Dquarkus.package.jar.type=uber-jar` | `./gradlew build -Dquarkus.package.jar.type=uber-jar` |
+| **native** | native executable `target/*-runner` (GraalVM/Mandrel) | `./mvnw package -Dquarkus.native.enabled=true` | `./gradlew build -Dquarkus.native.enabled=true` |
+| **native, container build** | native executable built inside a builder container (no local GraalVM needed) | `./mvnw package -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` | `./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true` |
 | **container image** | OCI image in the local registry/daemon | `./mvnw package -Dquarkus.container-image.build=true` | `./gradlew build -Dquarkus.container-image.build=true` |
 
 Exact per-tool commands (Gradle, Quarkus CLI, combined native + container, builder-image pinning) are
@@ -66,8 +69,8 @@ memory. Container-image specifics live in [`references/container-image.md`](refe
 | Decision | Default | When to deviate |
 |---|---|---|
 | Mode | **fast-jar** — fast to build, needs a JVM at run time | user asked for native (startup/memory) or a container |
-| Native base | container build (`-Dquarkus.native.container-build=true`) when no `native-image` on PATH | local GraalVM/Mandrel present → plain `-Dnative` is faster to iterate |
-| Tests during build | run as the build does by default; skip with `-DskipTests` (Maven) / `-x test` (Gradle) only when the user wants the artifact quickly | never skip silently — a build with skipped tests must be reported as such |
+| Native base | container build (`-Dquarkus.native.container-build=true`) when no `native-image` on PATH | local GraalVM/Mandrel present → use native-profile `-Dnative` only if that profile exists; otherwise `-Dquarkus.native.enabled=true` |
+| Tests during build | run according to detected lifecycle; skip only when requested and report exactly what was skipped | never skip silently — a build with skipped tests must be reported as such |
 | Container image type | whatever extension the project already has; else ask (Docker / Jib / Podman) | Jib needs no Docker daemon — prefer it when only a registry/CI build is wanted |
 | Profile | the packaged artifact is a **production run**; `%prod.` properties apply | user wants to override at run time → pass `-Dquarkus.profile=<name>` when starting it |
 
@@ -92,7 +95,6 @@ fast-jar — say what you are building instead of asking.
 
 ## Step 0 — Read the request (no tools)
 
-Tell the user: `Step 0/4: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -104,9 +106,8 @@ signal → fast-jar for the JVM path, and say that native is available if startu
 
 ## Step 1 — Gather context
 
-Tell the user: `Step 1/4: Gathering context...`
 
-Read the build file (packaging extensions, `quarkus.native.*`, `quarkus.package.type`), check for the
+Read the build file (packaging extensions, `quarkus.native.*`, `quarkus.package.jar.type`), check for the
 container runtime (`command -v docker podman`) if a container path is plausible, and look at what the
 previous build left in `target/` / `build/`. State the findings in three lines:
 
@@ -114,19 +115,18 @@ previous build left in `target/` / `build/`. State the findings in three lines:
 ### Context:
 - Build: Maven (./mvnw), Quarkus 3.20, packaging: defaults (fast-jar)
 - Container runtime: docker present; no container-image extension yet
-- Previous artifacts: target/quarkus-app/ from an earlier fast-jar build
+- Previous artifact detected: target/quarkus-app/ (prior artifact, not proof of fresh output)
 ```
 
 ---
 
 ## Step 2 — Choose the mode and resolve the command
 
-Tell the user: `Step 2/4: Resolving the build command...`
 
 Turn the goal + context into one concrete command from [`references/build-modes.md`](references/build-modes.md)
 (and [`references/container-image.md`](references/container-image.md) for image mode). Rules:
 
-- Respect existing `quarkus.native.*` / `quarkus.package.type` settings — do not contradict the project.
+- Respect existing `quarkus.native.*` / `quarkus.package.jar.type` settings — do not contradict the project.
 - Native without `native-image` on PATH → add `-Dquarkus.native.container-build=true` (and pin the
   builder image only if the project or the user requires a specific one).
 - Container image but no `quarkus-container-image-*` extension → that is a genuine fork: ask which of
@@ -137,9 +137,8 @@ Turn the goal + context into one concrete command from [`references/build-modes.
 
 ## Step 3 — Run the build
 
-Tell the user: `Step 3/4: Building (this may take a while)...`
 
-If your harness supports subagents, delegate the run to ONE subagent and have it return only the
+Delegate the run only when the caller/operator permits delegation and the environment supports it; otherwise run the build directly. Keep returned evidence to the command, exit code, and decisive log lines.
 outcome (exit status, artifact paths, key error lines on failure) — a native build log must not flood
 the conversation. Otherwise run it directly and capture the tail.
 
@@ -154,9 +153,8 @@ the conversation. Otherwise run it directly and capture the tail.
 
 ## Step 4 — Verify the artifact and report
 
-Tell the user: `Step 4/4: Reporting the artifact...`
 
-Verify the file exists at the expected path before reporting it (see
+Verify the file was produced or refreshed by this invocation at the expected path before reporting it (see
 [`references/run-output.md`](references/run-output.md) for the path per mode) — a green exit code with
 no artifact is not a successful build. Report compactly:
 
@@ -164,7 +162,7 @@ no artifact is not a successful build. Report compactly:
 Build: Maven · native (container build)
 Artifact: target/order-service-1.0.0-SNAPSHOT-runner (native executable)
 Run: ./target/order-service-1.0.0-SNAPSHOT-runner
-Started in ~0.03s (Quarkus prints it) — check GET http://localhost:8080/q/health
+Started successfully (report the observed startup line, not an assumed duration). Check a known application route; use `/q/health` only if health extension and route are confirmed.
 ```
 
 For a container image report the image reference (`<group>/<name>:<tag>`), not just "image built".
@@ -176,10 +174,13 @@ If the artifact must be exercised before it counts as working, the black-box tes
 
 ---
 
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
+
 ## Anti-hallucination checklist
 
-- [ ] The build command matches the project's actual build tool and existing `quarkus.native.*` /
-      `quarkus.package.type` settings.
+- [ ] The build command matches the target module, actual tool/wrapper availability and existing `quarkus.native.*` / `quarkus.package.jar.type` settings.
 - [ ] Module/artifact names in reported paths come from the real `target/` or `build/` listing.
 - [ ] Native container builds were offered only after confirming a container runtime is available
       (or explicitly flagged as a requirement).

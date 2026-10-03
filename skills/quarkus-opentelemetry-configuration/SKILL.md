@@ -35,6 +35,9 @@ InMemory-exporter test setup. Ensures the extension dependency is on the classpa
 
 ## Preflight — Project detection (before Step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 Harness-agnostic: file tools and shell commands only — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
@@ -103,7 +106,6 @@ prior turns, and the user's prompt. Only ask when context yields no clear defaul
 
 ## Step 0 — Conversation context (mental, no tool calls)
 
-Tell the user: `Step 0/7: Analyzing conversation context...`
 
 Re-read the user's prompt and prior turns; tick off everything already stated:
 
@@ -122,7 +124,6 @@ Tick → skip the corresponding question. Do not announce Step 0.
 
 ## Step 1 — Gather context (file reads + greps, no MCP)
 
-Tell the user: `Step 1/7: Gathering context...`
 
 | Source | Variables extracted |
 |---|---|
@@ -144,7 +145,6 @@ more, or all-zero → ask which module, then re-gather for that module.
 
 ## Step 2 — All questions in ONE batch
 
-Tell the user: `Step 2/7: Asking all questions...`
 
 Ask everything in a single structured-question call (up to 4 questions). Pre-fill from context, skip
 already-answered:
@@ -162,7 +162,6 @@ If the user asked for exactly one thing ("включи метрики") — Step
 
 ## Step 3 — Dependencies
 
-Tell the user: `Step 3/7: Adding dependencies...`
 
 Per [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md):
 
@@ -182,7 +181,6 @@ skip and say so.
 
 ## Step 4 — Write configuration
 
-Tell the user: `Step 4/7: Writing configuration...`
 
 Compose `application.properties` **only** from
 [`examples/_properties/`](examples/_properties/traces.md) blocks:
@@ -219,7 +217,6 @@ Overwrite existing keys in place; never delete unrelated keys or duplicate a key
 
 ## Step 5 — Generate instrumentation code (Path B only)
 
-Tell the user: `Step 5/7: Generating instrumentation code...`
 
 1. Pick examples per need:
    - spans → [`examples/_spans/with-span.md`](examples/_spans/with-span.md) (annotation-driven) and/or
@@ -237,7 +234,6 @@ Tell the user: `Step 5/7: Generating instrumentation code...`
 
 ## Step 6 — Test setup (only when the user asked for tests)
 
-Tell the user: `Step 6/7: Setting up OTel test support...`
 
 Follow [`examples/_testing/in-memory-exporters.md`](examples/_testing/in-memory-exporters.md):
 `opentelemetry-sdk-testing` test dependency, `@Produces @Singleton InMemorySpanExporter` (and
@@ -248,7 +244,6 @@ available, hand the rest of the test file over to it.
 
 ## Step 7 — Report
 
-Tell the user: `Step 7/7: Reporting...`
 
 Match the user's conversation language. Include:
 
@@ -267,6 +262,10 @@ Match the user's conversation language. Include:
 - Effective defaults stated: sampler `parentbased_always_on` (100% traced); metric export interval 60s;
   traces on with zero config.
 - Any stubbed business logic left in generated beans, and remaining questions.
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

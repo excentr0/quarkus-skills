@@ -37,7 +37,9 @@ repo.findAll()
 - `pageIndex` is **0-based** — the first page is `Page.of(0, 20)`.
 - `PanacheQuery.page(...)` returns the query (fluent) — assign or chain it.
 - A `PanacheQuery` can report pagination state: `pageCount()`, `hasNextPage()`, `nextPage()`,
-  `lastPage()`, `firstResult()`/`maxResults()`.
+  `lastPage()`, `firstResult()`.
+
+Validate pagination inputs before constructing a page: require `page >= 0` and `1 <= size <= 100` (or a lower project-specific cap). Reject invalid values with HTTP 400.
 
 Expose pagination as two query params with defaults:
 
@@ -54,8 +56,10 @@ Expose pagination as two query params with defaults:
 import io.quarkus.panache.common.Sort;
 
 repo.findAll()
-    .page(Page.of(page, size), Sort.by("name"))          // ascending
-    .page(Page.of(page, size), Sort.by("createdAt").descending())
+    .page(Page.of(page, size))                     // after findAll(Sort.by("name"))
+
+repo.findAll(Sort.by("createdAt").descending())
+    .page(Page.of(page, size))
 ```
 
 If a `sort` query parameter is exposed, **never** pass the raw string through to `Sort.by`

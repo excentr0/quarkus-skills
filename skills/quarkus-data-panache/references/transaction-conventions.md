@@ -6,7 +6,7 @@ Two parts: **detection** (substeps 3.1–3.5 — run them before writing code) a
 
 # Part A — Detection
 
-Tell the user which substep you are on while running them: `Step 3.1/3.5: Finding transaction boundaries...`.
+
 
 ## Step 3.1: Find existing transaction usage
 
@@ -14,7 +14,7 @@ Grep for `jakarta.transaction.Transactional` and `Transactional` imports across 
 hit, note the annotated method's enclosing class and layer (resource / service / repository / other), and
 whether the method is a read or a write path. Read 2–3 annotated methods in full.
 
-## Step 3.2: Score each convention
+## Step 3.2: Resolve conventions from source evidence
 
 - **Placement layer** — where does `@Transactional` sit: JAX-RS resource methods, CDI service methods,
   repository methods, or mixed? Default: service methods for multi-step units of work; a single-step CRUD
@@ -29,16 +29,13 @@ whether the method is a read or a write path. Read 2–3 annotated methods in fu
 - **Unit of work** — does one transaction wrap the whole operation (all Panache writes together) or does
   each repository call manage its own? Default: one transaction around the whole unit of work
 
-## Step 3.3: Collect uncertain conventions
+## Step 3.3: Resolve material conflicts
 
-Score confidence only where examples exist but are ambiguous or inconsistent. Absent usage — confidence is
-high, use the defaults. Collect all conventions with confidence < 80.
+Follow consistent transaction placement in the nearest relevant source; if examples are absent, use the documented defaults. Ask once or stop if conflicting evidence changes transaction behavior or safety. Do not use numeric confidence scores.
 
 ## Step 3.4: Ask developer
 
-If there are uncertain conventions from step 3.3, ask in a single prompt — use your harness's
-structured-question tool (e.g. `AskUserQuestion` / `ask_user_question`); fall back to a numbered plain-text
-list if none is available.
+If a material conflict remains, ask once with a structured-question tool when available; otherwise use a numbered plain-text question.
 
 Example shape — adapt to what you found:
 

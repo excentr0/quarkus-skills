@@ -30,7 +30,7 @@ written by one test is visible to the next.
 
 - Prefer creating exactly the rows the test needs in `@BeforeEach` via Panache calls, and removing them
   in `@AfterEach`.
-- `@Transactional` on a test method rolls back only the test-thread transaction. For REST tests the HTTP
+- `@Transactional` on a test method does not roll back its work; changes normally commit when the test transaction completes. `@TestTransaction` rolls back work performed on the test thread. For REST tests the HTTP
   request runs in its own transaction, so the row written by the request **survives** the rollback — do
   not rely on `@Transactional` for cleanup of HTTP-triggered writes.
 - Assertions on collection sizes must either own the full table state or filter by something unique the

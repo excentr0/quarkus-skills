@@ -22,7 +22,8 @@ ${className} MAPPER = org.mapstruct.factory.Mappers.getMapper(${className}.class
 
 ## Note
 
-`Mappers.getMapper(...)` uses reflection to locate the generated implementation. In native
-mode this only works when the mapper class is registered for reflection — in a Quarkus project
-that is exactly what the `io.quarkiverse.mapstruct:quarkus-mapstruct` extension does. Prefer
-the CDI component model anyway; the factory field exists for plain-MapStruct setups.
+`Mappers.getMapper(...)` uses reflection to locate the generated implementation. Native mode
+requires verified reflection registration. A compatible Quarkiverse extension may provide it;
+verify compatibility against the target Quarkus release before adding the extension. The
+Quarkus 3.20.3 fixture verifies core CDI mapping only, not native reflection registration.
+Prefer the CDI component model; the factory field exists for plain-MapStruct setups.

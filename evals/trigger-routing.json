@@ -1,42 +1,641 @@
 [
   {
+    "id": "legacy-explore-positive",
     "skill": "quarkus-explore",
     "prompt": "Explore this Quarkus project and summarize its structure.",
-    "should_trigger": true
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-explore"
+    ],
+    "allowed_companions": []
   },
   {
+    "id": "legacy-explore-kafka-near-miss",
     "skill": "quarkus-explore",
     "prompt": "Configure a Kafka channel for the orders topic.",
-    "should_trigger": false
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-kafka-configuration"
+    ]
   },
   {
+    "id": "legacy-kafka-positive",
     "skill": "quarkus-kafka-configuration",
     "prompt": "Configure Kafka for the orders channel.",
-    "should_trigger": true
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-kafka-configuration"
+    ],
+    "allowed_companions": []
   },
   {
+    "id": "legacy-kafka-generic-emitter",
     "skill": "quarkus-kafka-configuration",
     "prompt": "Add a Reactive Messaging Emitter without naming the broker.",
-    "should_trigger": false
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-explore",
+      "quarkus-config"
+    ]
   },
   {
+    "id": "legacy-kafka-rabbitmq-near-miss",
     "skill": "quarkus-kafka-configuration",
     "prompt": "Configure a RabbitMQ queue for order events.",
-    "should_trigger": false
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-rabbitmq-configuration",
+      "quarkus-explore",
+      "quarkus-config"
+    ]
   },
   {
+    "id": "legacy-rabbitmq-positive",
     "skill": "quarkus-rabbitmq-configuration",
     "prompt": "Configure a RabbitMQ queue for order events.",
-    "should_trigger": true
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-rabbitmq-configuration"
+    ],
+    "allowed_companions": []
   },
   {
+    "id": "legacy-rabbitmq-generic-emitter",
     "skill": "quarkus-rabbitmq-configuration",
     "prompt": "Add a generic Reactive Messaging Emitter without naming the broker.",
-    "should_trigger": false
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-explore",
+      "quarkus-config"
+    ]
   },
   {
+    "id": "legacy-rabbitmq-kafka-near-miss",
     "skill": "quarkus-rabbitmq-configuration",
     "prompt": "Configure a Kafka topic for order events.",
-    "should_trigger": false
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-kafka-configuration",
+      "quarkus-explore",
+      "quarkus-config"
+    ]
+  },
+  {
+    "id": "quarkus-explore-en-positive",
+    "skill": "quarkus-explore",
+    "prompt": "Inspect the project and summarize its Quarkus structure.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-explore"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-explore-ru-positive",
+    "skill": "quarkus-explore",
+    "prompt": "Исследуй проект и кратко опиши структуру Quarkus-приложения.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-explore"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-planning-en-positive",
+    "skill": "quarkus-planning",
+    "prompt": "Create an implementation plan for adding an order search endpoint.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-planning"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-planning-ru-positive",
+    "skill": "quarkus-planning",
+    "prompt": "Составь план реализации поиска заказов через endpoint.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-planning"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-data-panache-en-positive",
+    "skill": "quarkus-data-panache",
+    "prompt": "Add a Panache repository query for active orders.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-data-panache"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-data-panache-ru-positive",
+    "skill": "quarkus-data-panache",
+    "prompt": "Добавь запрос Panache-репозитория для активных заказов.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-data-panache"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-crud-rest-controller-en-positive",
+    "skill": "quarkus-crud-rest-controller",
+    "prompt": "Create a synchronous CRUD REST resource backed by a Panache repository.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-crud-rest-controller"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-crud-rest-controller-ru-positive",
+    "skill": "quarkus-crud-rest-controller",
+    "prompt": "Создай синхронный CRUD REST-ресурс на базе Panache-репозитория.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-crud-rest-controller"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-dto-creator-en-positive",
+    "skill": "quarkus-dto-creator",
+    "prompt": "Create a Java record DTO for the Customer entity with validation.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-dto-creator"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-dto-creator-ru-positive",
+    "skill": "quarkus-dto-creator",
+    "prompt": "Создай DTO на Java record для Customer с валидацией.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-dto-creator"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-mapper-creator-en-positive",
+    "skill": "quarkus-mapper-creator",
+    "prompt": "Create a CDI MapStruct mapper between Customer and CustomerDto.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-mapper-creator"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-mapper-creator-ru-positive",
+    "skill": "quarkus-mapper-creator",
+    "prompt": "Создай CDI-маппер MapStruct между Customer и CustomerDto.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-mapper-creator"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-security-configuration-en-positive",
+    "skill": "quarkus-security-configuration",
+    "prompt": "Require the admin role for the order management API.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-security-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-security-configuration-ru-positive",
+    "skill": "quarkus-security-configuration",
+    "prompt": "Ограничь API управления заказами ролью admin.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-security-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-kafka-configuration-en-positive",
+    "skill": "quarkus-kafka-configuration",
+    "prompt": "Configure a Kafka incoming channel for order events.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-kafka-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-kafka-configuration-ru-positive",
+    "skill": "quarkus-kafka-configuration",
+    "prompt": "Настрой входящий Kafka-канал для событий заказов.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-kafka-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-rabbitmq-configuration-en-positive",
+    "skill": "quarkus-rabbitmq-configuration",
+    "prompt": "Configure a RabbitMQ queue for order events.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-rabbitmq-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-rabbitmq-configuration-ru-positive",
+    "skill": "quarkus-rabbitmq-configuration",
+    "prompt": "Настрой очередь RabbitMQ для событий заказов.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-rabbitmq-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-opentelemetry-configuration-en-positive",
+    "skill": "quarkus-opentelemetry-configuration",
+    "prompt": "Add an OpenTelemetry span around order processing.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-opentelemetry-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-opentelemetry-configuration-ru-positive",
+    "skill": "quarkus-opentelemetry-configuration",
+    "prompt": "Добавь span OpenTelemetry вокруг обработки заказа.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-opentelemetry-configuration"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-run-tests-en-positive",
+    "skill": "quarkus-run-tests",
+    "prompt": "Run the existing Maven tests and summarize fresh test reports.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-run-tests"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-run-tests-ru-positive",
+    "skill": "quarkus-run-tests",
+    "prompt": "Запусти существующие Maven-тесты и кратко опиши свежие отчёты.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-run-tests"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-test-writing-en-positive",
+    "skill": "quarkus-test-writing",
+    "prompt": "Write a Quarkus integration test for the public order API.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-test-writing"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-test-writing-ru-positive",
+    "skill": "quarkus-test-writing",
+    "prompt": "Напиши интеграционный тест Quarkus для публичного API заказов.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-test-writing"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-coverage-en-positive",
+    "skill": "quarkus-coverage",
+    "prompt": "Measure test coverage and report the value from the fresh coverage report.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-coverage"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-coverage-ru-positive",
+    "skill": "quarkus-coverage",
+    "prompt": "Измерь покрытие тестами и укажи значение из свежего отчёта.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-coverage"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-mutation-testing-en-positive",
+    "skill": "quarkus-mutation-testing",
+    "prompt": "Run PIT mutation testing for the order service.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-mutation-testing"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-mutation-testing-ru-positive",
+    "skill": "quarkus-mutation-testing",
+    "prompt": "Запусти mutation testing PIT для сервиса заказов.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-mutation-testing"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-checkstyle-en-positive",
+    "skill": "quarkus-checkstyle",
+    "prompt": "Add Checkstyle checks to the Maven build and triage violations.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-checkstyle"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-checkstyle-ru-positive",
+    "skill": "quarkus-checkstyle",
+    "prompt": "Добавь проверки Checkstyle в Maven-сборку и разберись с нарушениями.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-checkstyle"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-db-migrations-en-positive",
+    "skill": "quarkus-db-migrations",
+    "prompt": "Add a Flyway migration for the new order status column.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-db-migrations"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-db-migrations-ru-positive",
+    "skill": "quarkus-db-migrations",
+    "prompt": "Добавь миграцию Flyway для новой колонки статуса заказа.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-db-migrations"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-config-en-positive",
+    "skill": "quarkus-config",
+    "prompt": "Add a typed application setting for the order retry limit.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-config"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-config-ru-positive",
+    "skill": "quarkus-config",
+    "prompt": "Добавь типизированную настройку приложения для лимита повторов заказа.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-config"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-native-build-en-positive",
+    "skill": "quarkus-native-build",
+    "prompt": "Build the Quarkus application as a native executable.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-native-build"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-native-build-ru-positive",
+    "skill": "quarkus-native-build",
+    "prompt": "Собери Quarkus-приложение в виде native executable.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-native-build"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-rest-client-en-positive",
+    "skill": "quarkus-rest-client",
+    "prompt": "Create a typed REST client for the shipping service.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-rest-client"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "quarkus-rest-client-ru-positive",
+    "skill": "quarkus-rest-client",
+    "prompt": "Создай типизированный REST-клиент для сервиса доставки.",
+    "language": "ru",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-rest-client"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "boundary-test-writing-not-running",
+    "skill": "quarkus-run-tests",
+    "prompt": "Write a new Quarkus test; do not execute tests.",
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-test-writing",
+      "quarkus-explore"
+    ]
+  },
+  {
+    "id": "boundary-test-writing-positive",
+    "skill": "quarkus-test-writing",
+    "prompt": "Write a Quarkus test for a resource endpoint.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-test-writing"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "boundary-coverage-not-pit",
+    "skill": "quarkus-coverage",
+    "prompt": "Configure PIT mutation testing and analyze killed mutants.",
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-mutation-testing",
+      "quarkus-explore",
+      "quarkus-run-tests"
+    ]
+  },
+  {
+    "id": "boundary-pit-not-coverage",
+    "skill": "quarkus-mutation-testing",
+    "prompt": "Run PIT mutation analysis for a service.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-mutation-testing"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "boundary-native-not-devmode",
+    "skill": "quarkus-native-build",
+    "prompt": "Start Quarkus in dev mode for hot reload.",
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-explore",
+      "quarkus-config"
+    ]
+  },
+  {
+    "id": "boundary-devmode-not-native",
+    "skill": "quarkus-native-build",
+    "prompt": "Build a native executable for deployment.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-native-build"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "boundary-security-not-generic-config",
+    "skill": "quarkus-security-configuration",
+    "prompt": "Add an unrelated typed timeout setting to application config.",
+    "language": "en",
+    "should_trigger": false,
+    "expected_reads": [],
+    "allowed_companions": [
+      "quarkus-config",
+      "quarkus-explore"
+    ]
+  },
+  {
+    "id": "boundary-generic-config-not-security",
+    "skill": "quarkus-config",
+    "prompt": "Add a typed setting for request timeout.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-config"
+    ],
+    "allowed_companions": []
+  },
+  {
+    "id": "composition-crud-dto-mapper-panache",
+    "skill": "quarkus-crud-rest-controller",
+    "prompt": "Add a synchronous CRUD resource for Customer using the existing Panache repository, a DTO, and a safe MapStruct mapper update.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-crud-rest-controller",
+      "quarkus-data-panache",
+      "quarkus-dto-creator",
+      "quarkus-mapper-creator"
+    ],
+    "allowed_companions": [
+      "quarkus-data-panache",
+      "quarkus-dto-creator",
+      "quarkus-mapper-creator"
+    ],
+    "expected_handoffs": [
+      "quarkus-dto-creator",
+      "quarkus-mapper-creator"
+    ]
+  },
+  {
+    "id": "boundary-reactive-stack-stop",
+    "skill": "quarkus-data-panache",
+    "prompt": "The project uses Hibernate Reactive; stop rather than generating a synchronous Panache repository.",
+    "language": "en",
+    "should_trigger": true,
+    "expected_reads": [
+      "quarkus-data-panache"
+    ],
+    "allowed_companions": [],
+    "expected_stop_decision": true
   }
 ]

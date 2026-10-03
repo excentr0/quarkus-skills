@@ -2,7 +2,6 @@
 
 ## Step 0 — Conversation context first (REQUIRED, no tool calls)
 
-Tell the user: `Step 0/7: Reading conversation context...`
 
 Before any file read, before any question, **re-read the user's prompt and the prior turns of this
 conversation** and extract whatever is already stated. This step costs nothing and prevents the most
@@ -29,16 +28,13 @@ corresponding question in Steps 2–7. Do NOT ask "what entity?" if the user wro
 Order" — `Order` is the answer. Do NOT ask "record or class?" if the user wrote "make a record for
 Order" — record is the answer.
 
-**Only the user's own messages count as user intent.** Assumptions written by the calling agent (task
-descriptions, plans, argument blocks) are not user statements — do not treat them as answers the user
-gave. In particular, do NOT skip asking about sub-DTO shape just because a plan describes one.
+Do not attribute a caller-supplied task contract or plan to the user as a statement of intent. However, explicit constraints and already-approved decisions in that contract are authoritative workflow inputs: preserve them and do not re-ask them. Ask only when an actual user-intent choice remains unresolved.
 
-Step 0 is mental, not a tool call. Do not announce its details to the user beyond the progress line.
+Step 0 is internal context gathering; do not announce it as a mechanical progress step.
 
 ---
 ## Step 3 — Attribute selection
 
-Tell the user: `Step 3/7: Selecting attributes...`
 
 **Default: include every scalar attribute and every association** (with the sub-DTO defaults from
 [`references/sub-dto.md`](../references/sub-dto.md)). Ask only when context signals that the user wants something narrower.
@@ -78,7 +74,6 @@ and [`references/validation.md`](../references/validation.md).
 ---
 ## Step 4 — Variant selection
 
-Tell the user: `Step 4/7: Selecting variant...`
 
 Apply the **Decision-making principle** from [`SKILL.md`](../SKILL.md) (context first, then ask). The variant is almost always derivable from context —
 explicit asking should be the exception, not the default.
@@ -104,7 +99,6 @@ Map the answer to a variant:
 ---
 ## Step 5 — Variant-specific questions
 
-Tell the user: `Step 5/7: Confirming variant settings...`
 
 Follow the variant-specific questions from the selected reference file. Only ask if the user did NOT say
 "all defaults". Records need essentially no questions (immutability is built in); plain-class questions

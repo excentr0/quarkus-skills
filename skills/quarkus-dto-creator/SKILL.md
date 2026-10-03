@@ -18,14 +18,17 @@ getters/setters, equals/hashCode, toString, and optional features.
 
 ---
 
-> **CRITICAL: Code ONLY from examples/ files. If no matching example — STOP and ask the user.**
+> **CRITICAL: Use examples/ fragments for framework/API calls; do not invent framework APIs. Adapt package/imports, names, source-backed fields/accessors, and request-specific assertions to the project. If a required API shape is not covered, verify it from an applicable official source or stop and ask.**
 > **CRITICAL: For questions with a fixed set of choices, use your harness's structured-question tool (e.g. `AskUserQuestion` / `ask_user_question`) — its analogue if the exact name differs — and fall back to a numbered text list only when no interactive tool is available.**
 > **CRITICAL: Read the conversation context BEFORE running Step 1.** Half the questions in Steps 2–7 may already be answered by the user's prompt and prior turns. Re-asking what was already said is the #1 reason this skill feels slow.
-> **Step 7 (mapper) is automatic when conversion is needed.** If it is clear from context that the DTO will be used in code that converts entities to/from DTOs (resource, service, replacing an entity in a response), the skill MUST delegate to `quarkus-mapper-creator` — never write manual mapping code inline. The `quarkus-mapper-creator` skill decides the implementation (MapStruct, custom converter, adding dependencies) — this skill just delegates.
+> **Step 7 (mapper) is required when conversion is part of the approved task contract.** Follow `quarkus-mapper-creator` for mapping rather than writing inline mapping logic. A cross-skill handoff does not itself authorize launching a subagent: when the environment permits skill activation, activate/read the mapper skill; otherwise apply its instructions directly from the available skill files. Preserve caller-approved entity/DTO/method/accessor constraints without re-asking, but do not describe task instructions as user intent.
 
 ---
 
 ## Preflight — Project detection (before Step 0)
+
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
 
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP server or IDE
 integration is required.
@@ -164,9 +167,6 @@ Generation correctness is the goal — not UI fidelity.
 ---
 
 ## Step 0 — Conversation context first (REQUIRED, no tool calls)
-
-Tell the user: `Step 0/7: Reading conversation context...`
-
 Before any file read or question, re-read the user's prompt and prior turns and mark every already
 answered input. Read [`references/interaction-workflow.md`](references/interaction-workflow.md) for
 the full context checklist and question matrices before Steps 2–5.
@@ -178,9 +178,6 @@ the full context checklist and question matrices before Steps 2–5.
 ---
 
 ## Step 1 — Gather minimal project context (automatic, no questions)
-
-Tell the user: `Step 1/7: Detecting project context...`
-
 Read only the files whose result is **actually consumed** by a later step. Do not pre-fetch "in case we
 need it" — every variable here must have a concrete downstream user.
 
@@ -206,9 +203,6 @@ That is the entire Step 1. **Do NOT** fetch:
 ---
 
 ## Step 2 — Entity selection
-
-Tell the user: `Step 2/7: Selecting entity...`
-
 By Step 0 you should already know the entity if the user mentioned it. Most common case: the user wrote
 "create DTO for `Order`" → entity is `Order`, skip the question.
 
@@ -235,9 +229,6 @@ entity source. Back-reference filtering happens in Step 3 / [`references/sub-dto
 ---
 
 ## Step 3 — Attribute selection
-
-Tell the user: `Step 3/7: Selecting attributes...`
-
 Before selecting fields, read [`references/interaction-workflow.md`](references/interaction-workflow.md).
 Use the entity purpose and source-derived fields to choose the default set; ask only when the user
 requests a narrower or fine-grained selection. Apply the sub-DTO rules in `references/sub-dto.md`.
@@ -245,9 +236,6 @@ requests a narrower or fine-grained selection. Apply the sub-DTO rules in `refer
 ---
 
 ## Step 4 — Variant selection
-
-Tell the user: `Step 4/7: Selecting variant...`
-
 Read [`references/interaction-workflow.md`](references/interaction-workflow.md) for the variant
 matrix. Derive record/plain-class/Lombok from project conventions and explicit user intent; ask only
 when no signal remains.
@@ -255,9 +243,6 @@ when no signal remains.
 ---
 
 ## Step 5 — Variant-specific questions
-
-Tell the user: `Step 5/7: Confirming variant settings...`
-
 Read [`references/interaction-workflow.md`](references/interaction-workflow.md) and the selected
 variant reference before asking. Records need no settings questions; batch only unresolved plain-class
 questions, and skip them when the user said "all defaults".
@@ -265,15 +250,12 @@ questions, and skip them when the user said "all defaults".
 ---
 
 ## Step 6 — Generate code
-
-Tell the user: `Step 6/7: Generating DTO...`
-
 Before writing, read [`references/generation-workflow.md`](references/generation-workflow.md). Follow
 the selected variant's generation order, collision rules, fragment insert points, indentation and
 per-field behavior from that reference.
 
 - **NEVER** substitute anything not listed in Variables.
-- **NEVER** add imports, methods, or code not in the example.
+- Use example fragments for framework/API calls; do not invent framework APIs. Adapt imports, package/names, source-backed fields/accessors, and requested DTO declarations.
 - **FQN handling (CRITICAL):** examples contain FQNs. When writing the final file, you **MUST** shorten
   them consistently and add the corresponding grouped imports.
 - For `NEW_NESTED_CLASS` in a Java record, the nested declaration **MUST** be a nested `public record`;
@@ -281,26 +263,18 @@ per-field behavior from that reference.
 
 ---
 
-## Step 7 — Mapper (automatic when conversion is needed)
-
-Tell the user: `Step 7/7: Checking whether a mapper is needed...`
-
-Decide whether a mapper is needed based on context, then act:
+## Step 7 — Mapper (when conversion is in scope)
+Decide whether conversion is required by the caller's approved task contract and project context, then apply the mapper skill instructions directly:
 
 | Signal | Action |
 |---|---|
-| User said "only DTO" / "no mapper" / "without mapper" | Skip Step 7 entirely. Do NOT mention the mapper. |
-| User explicitly asked for a mapper ("and mapper", "with mapper", "create mapper too") | Delegate to `quarkus-mapper-creator` immediately. |
-| From context it is clear that entity↔DTO conversion will happen (replacing an entity with a DTO in a resource/service, "convert/map/transform", the DTO is a REST response type) | Delegate to `quarkus-mapper-creator` immediately. The conversion is inevitable — creating the DTO without a mapper would force manual inline mapping code, which is never acceptable. |
+| Approved caller task contract requires entity↔DTO conversion | Apply mapper workflow with its entity/DTO/method/accessor contract; don't re-ask those decisions. If this conflicts with a direct user request, resolve that conflict before changing scope. |
+| User said "only DTO" / "no mapper" / "without mapper" and no approved task contract requires conversion | Skip Step 7 entirely. Do NOT mention the mapper. |
+| Caller-approved task contract requires entity↔DTO conversion | Apply `quarkus-mapper-creator` instructions with the supplied entity/DTO/method/accessor contract; don't re-ask settled inputs. |
+| The user's request and project context establish conversion as part of this task | Apply `quarkus-mapper-creator` instructions; do not invent inline mapping code. |
 | Context is silent — no signal about how the DTO will be used | Skip Step 7. Do not mention the mapper. |
 
-**CRITICAL:** never write manual mapping code (inline `toDto` / `fromDto` methods in resources, services,
-or anywhere else). If conversion is needed, always delegate to `quarkus-mapper-creator`. That skill
-decides the implementation strategy (MapStruct with `componentModel = "cdi"`, custom converter, adding
-dependencies) — this skill just delegates.
-
-Never ask a structured question for the mapper. If delegating, invoke the `quarkus-mapper-creator` skill
-with the DTO and entity information directly — do not ask the user to confirm the delegation.
+**CRITICAL:** never write manual mapping code (inline `toDto` / `fromDto` methods in resources, services, or elsewhere). If conversion is required, use the mapper skill's rules and hand off the exact known contract. Skill activation or sibling-skill handoff does not authorize spawning a subagent: delegate mechanically only when both the caller/operator and environment permit it; otherwise read and apply the referenced skill in this context. Do not ask the caller to repeat already resolved contract values.
 
 ---
 
@@ -325,14 +299,18 @@ The rename/validation/annotation-parameter controls are in
 
 ---
 
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
+
 ## Anti-hallucination checklist
 
 Before writing ANY code, verify:
-- [ ] The code comes from an `examples/` file (cite which one)
+- [ ] Framework/API calls use documented example fragments (cite them); project types, fields, and accessors come from source
 - [ ] Only declared variables were substituted
 - [ ] No framework API calls were added "from knowledge"
-- [ ] Import list matches the example exactly
-- [ ] Method signatures match the example exactly
+- [ ] Imports are valid, non-duplicate, and resolve all shortened types; ordering follows project convention when known
+- [ ] Method signatures match the requested method contract and use source-backed names/types
 - [ ] No comments or convenience methods were added
 - [ ] FQNs from examples are shortened in the body AND corresponding `import` lines were added after `package`
 - [ ] **Every** Javadoc shape — top-level class, top-level record, nested static class, nested record, separate-file sub-DTO — uses the short name `{@link Order}` AND adds a matching `import` (unless the entity is in the same package). Uniform rule, no asymmetry.
@@ -346,7 +324,7 @@ Before writing ANY code, verify:
 - [ ] The skill does NOT offer "Only ID" as a separate option — that option does not exist (neither for ToOne nor for ToMany). The "association id only" effect is produced by **Flat with only the sub-entity `id` checked**
 - [ ] For collection associations (`List<X>`, `Set<X>`), Flat **is** offered and produces composite plural fields (`List<Long> itemIds`), and sub-entity scalars are auto-checked
 - [ ] Back-reference `@ManyToOne` fields are filtered out of the attribute list (e.g. `OrderItem.order` is not offered when creating `OrderItemDto`)
-- [ ] Imports are grouped with a blank line between the third-party/project block and the `java.*` block
+- [ ] Imports are valid, non-duplicate, resolve all shortened types, and follow detected project ordering (or a consistent standard grouping when none exists)
 - [ ] Indentation matches the project's detected style (`.editorconfig` first, then sampling existing files in the same package, then 4-space default). Never hardcode tabs or spaces; apply uniformly across every fragment
 - [ ] Attributes (names, types, associations, constraints) trace to the entity source that was actually read — nothing invented. `PanacheEntity`'s implicit `public Long id` was treated as an attribute; `@Id` was read explicitly only for `PanacheEntityBase` / plain `@Entity`
 - [ ] Validation annotations were emitted only when `hasValidation = true`

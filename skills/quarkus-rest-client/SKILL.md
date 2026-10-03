@@ -15,6 +15,9 @@ description: >
 
 # Preflight — Project detection (before step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP
 server or IDE integration is required.
 
@@ -26,7 +29,7 @@ Detect the project shape from the build files:
 3. **Extensions** — dependencies starting with `io.quarkus:`; feature gates for this skill:
    - `quarkus-rest-client` → declarative REST client (`hasRestClient`)
    - `quarkus-rest-client-jackson` → JSON (de)serialization for client DTOs (`hasRestClientJackson`)
-   - `quarkus-junit-mockito` → `@InjectMock` available in tests (`hasInjectMock`)
+   - `quarkus-junit5-mockito` → `@InjectMock` available for Quarkus 3.20.3; verify target version (`hasInjectMock`)
    - legacy `quarkus-resteasy-client` → the project uses the RESTEasy Classic client; the
      MicroProfile annotations below are identical, so add new clients to the existing stack
      instead of introducing a second client library (`hasLegacyClient`)
@@ -66,10 +69,10 @@ and a mock-based test.
 | configKey | kebab-case service name, e.g. `billing-api` | must equal the property root exactly |
 | remoteBasePath | from the API docs; omit `@Path` when the API has no common base path | — |
 | operations | only what the task needs | never generate a hypothetical full API surface |
-| returnTypes | DTO records when the project uses them; `Response` for status-only operations | missing DTOs → delegate to `quarkus-dto-creator` |
+| returnTypes | DTO records when the project uses them; `Response` for status-only operations | missing DTOs → apply `quarkus-dto-creator` instructions directly; a sibling handoff does not itself authorize subagent delegation |
 | baseUrl | per environment | `${ENV_VAR}` expansion for env-specific URLs; literal secrets are never committed |
 | scope | project convention (often absent) | add `.scope` only when existing clients set it |
-| tests | mock with `@InjectMock @RestClient` when the task expects tests | requires `quarkus-junit-mockito` |
+| tests | mock with `@InjectMock @RestClient` when the task expects tests | requires the target-version Quarkus Mockito test extension (Quarkus 3.20.3: `quarkus-junit5-mockito`) |
 
 ### Auto-detected (no questions)
 
@@ -89,17 +92,15 @@ option — accept it, substitute it into the example, and continue. Do not re-as
 
 ### Decision-making principle — context first, then ask
 
-1. Derive every option from the conversation context and the detected conventions first.
-2. Score confidence (1–100). Confidence ≥ 80 → proceed with the detected/default value.
-3. Confidence < 80 → ask, with the default option marked "Recommended" and first.
-4. Never invent API contracts: unknown endpoints, request bodies, or response shapes must come
-   from the user, from API docs, or from an OpenAPI document — otherwise stop and ask.
+1. Derive options from caller context and source evidence first; follow a consistent pattern in the nearest relevant source.
+2. If examples are absent, use the documented default.
+3. Ask once or stop when conflicting evidence changes behavior/security, or when a remote API contract is unknown.
+4. Never invent endpoints, request bodies, response shapes, or auth schemes: use supplied/API/OpenAPI evidence, otherwise ask.
 
 ---
 
 ## Step 0 -- Conversation context first (REQUIRED, no tool calls)
 
-Tell the user: `Step 0/8: Analyzing the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -118,11 +119,8 @@ expected. Predict the involvement:
 
 ## Step 1 -- Preflight & conventions detection (automatic, no questions)
 
-Tell the user: `Step 1/8: Detecting project conventions...`
 
-Run the preflight above with file tools. Then score each convention below (1–100) from the code
-and configuration you found (detection commands, placement rules, and the "what not to do" list:
-[`references/conventions.md`](references/conventions.md)):
+Run the preflight above. Resolve each convention from detected source evidence (`references/conventions.md`); use listed defaults when examples are absent, and ask only about material conflicts.
 
 | Convention | How to detect | Default when absent |
 |---|---|---|
@@ -136,11 +134,10 @@ and configuration you found (detection commands, placement rules, and the "what 
 
 Report the result, e.g.: `Conventions detected: package .client, naming XxxClient, configKey kebab-case, no .scope, %prod. URL override.`
 
-Conventions with confidence < 80 are collected and asked in Step 2 — not separately.
+Ask once about unresolved material conflicts in Step 2; do not rate confidence or ask about already-resolved conventions.
 
 ## Step 2 -- Target service, operations & types (context first, then ask)
 
-Tell the user: `Step 2/8: Confirming client details...`
 
 Derive from context first; ask only genuine unknowns, all in ONE batch (structured-question tool,
 recommended option first):
@@ -157,7 +154,6 @@ unknown and the user cannot provide documentation, ask for the OpenAPI document 
 
 ## Step 3 -- Dependencies (automatic)
 
-Tell the user: `Step 3/8: Adding dependencies...`
 
 1. Read [`examples/dependencies.md`](examples/dependencies.md)
 2. Add only artifacts that are missing (`hasRestClient` / `hasRestClientJackson` / `hasInjectMock`)
@@ -167,18 +163,16 @@ Tell the user: `Step 3/8: Adding dependencies...`
 
 ## Step 4 -- Client interface (code from examples only)
 
-Tell the user: `Step 4/8: Creating the client interface...`
 
 1. Read [`examples/client-interface.md`](examples/client-interface.md)
 2. Substitute only the declared variables; place the interface per the detected conventions
 3. One method per operation from Step 2, with JAX-RS annotations matching the remote API paths
-4. Reuse existing DTO records for bodies; if response DTOs are missing, delegate to
-   [`quarkus-dto-creator`](../quarkus-dto-creator/SKILL.md)
+4. Reuse existing DTO records for bodies; if response DTOs are missing, apply the
+   [`quarkus-dto-creator`](../quarkus-dto-creator/SKILL.md) workflow directly. Mechanically hand off only when caller/operator and environment permit it; otherwise read and follow the skill.
 5. The import list must cover every shortened name used in the body
 
 ## Step 5 -- Base URL & configuration (code from examples only)
 
-Tell the user: `Step 5/8: Writing client configuration...`
 
 1. Read [`examples/config.md`](examples/config.md)
 2. Write `quarkus.rest-client."<configKey>".url=...` — the quoted root must equal the `configKey`
@@ -191,7 +185,6 @@ Details and pitfalls: [`references/client-config.md`](references/client-config.m
 
 ## Step 6 -- Injection & usage (code from examples only)
 
-Tell the user: `Step 6/8: Wiring the client in...`
 
 1. Read [`examples/injection.md`](examples/injection.md)
 2. Constructor injection with the `@RestClient` qualifier — the qualifier is mandatory; without
@@ -204,11 +197,10 @@ Tell the user: `Step 6/8: Wiring the client in...`
 
 ## Step 7 -- Test the client (when tests are expected)
 
-Tell the user: `Step 7/8: Writing the test mock...`
 
 1. Read [`examples/mock-test.md`](examples/mock-test.md)
 2. `@InjectMock @RestClient` replaces the client bean application-wide for the test class and
-   requires `quarkus-junit-mockito`; each test method gets a fresh mock
+   requires the target-version Quarkus Mockito test extension (Quarkus 3.20.3: `quarkus-junit5-mockito`); each test method gets a fresh mock
 3. Stub only the operations the test exercises; assert over HTTP with rest-assured as the project
    does (see [`quarkus-test-writing`](../quarkus-test-writing/SKILL.md))
 4. `@QuarkusIntegrationTest` runs out-of-process: mocking is impossible there — point the config
@@ -217,7 +209,6 @@ Tell the user: `Step 7/8: Writing the test mock...`
 
 ## Step 8 -- Verify & report
 
-Tell the user: `Step 8/8: Verifying...`
 
 1. Compile: Maven `./mvnw -q -DskipTests compile`, Gradle `./gradlew -q compileJava`.
    Fix generated code before reporting.
@@ -230,6 +221,10 @@ Tell the user: `Step 8/8: Verifying...`
    added, test file (if any).
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

@@ -34,6 +34,9 @@ tags — say so instead of pretending a filtered run is the project's coverage.
 
 ## Preflight — project detection
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: file tools plus shell commands — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
@@ -54,7 +57,6 @@ This skill is harness-agnostic: file tools plus shell commands — no MCP server
 
 ## Step 0 — Read the request (no tools)
 
-Tell the user: `Step 0/5: Reading the request...`
 
 **Do NOT call any tools in this step.**
 
@@ -66,7 +68,6 @@ whole-project number can be compared to a baseline.
 
 ## Step 1 — Make sure something measures
 
-Tell the user: `Step 1/5: Checking the coverage setup...`
 
 If `quarkus-jacoco` is present — skip to step 2.
 
@@ -83,7 +84,6 @@ e.g. `AskUserQuestion` / `ask_user_question`; a numbered list is the fallback) a
 
 ## Step 2 — Resolve the command
 
-Tell the user: `Step 2/5: Resolving the coverage command...`
 
 Follow [`references/maven.md`](references/maven.md) or [`references/gradle.md`](references/gradle.md)
 to build one command:
@@ -98,9 +98,8 @@ More than one plausible route → ask, do not guess. Do not run anything in this
 
 ## Step 3 — Run and collect the result
 
-Tell the user: `Step 3/5: Measuring coverage...`
 
-If your harness supports subagents, delegate the run + result collection to ONE subagent; otherwise
+Delegate the run + result collection only when the caller/operator permits delegation and the environment supports it; otherwise run directly.
 run directly. Coverage-build output is long and noisy — the runner's only job is the report defined in
 [`references/report.md`](references/report.md).
 
@@ -127,7 +126,6 @@ Then run, and have the runner:
 
 ## Step 4 — Report and decide the next step
 
-Tell the user: `Step 4/5: Reporting coverage...`
 
 Present the report as it came. Then:
 
@@ -140,6 +138,10 @@ Present the report as it came. Then:
   uncovered area.
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

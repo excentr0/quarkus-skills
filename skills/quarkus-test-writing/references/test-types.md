@@ -25,7 +25,7 @@ Three levels, three different costs. Pick the cheapest one that can still fail f
 - The application boots **inside the test JVM**. `@Inject` works, `@InjectMock` works, Dev Services
   (PostgreSQL, Kafka, Keycloak — whichever extensions are present) start automatically.
 - rest-assured is preconfigured with the test base URL — no `baseURI` setup needed.
-- `%test.` profile properties apply; `@QuarkusTestProfile` overrides per test class.
+- `%test.` profile properties apply. Implement `QuarkusTestProfile` as an interface and activate it with `@TestProfile(MyProfile.class)`.
 - **State persists**: all tests in a run share one app instance and one Dev-Service database. Tests that
   write data must clean up (`references/conventions.md`).
 - Requires a container runtime for Dev Services when a datasource/messaging extension is present —
@@ -33,19 +33,8 @@ Three levels, three different costs. Pick the cheapest one that can still fail f
 
 ## @QuarkusIntegrationTest
 
-- Runs against the **packaged artifact** produced by `quarkus:build` — the test process does not contain
-  the application: **no CDI injection, no `@InjectMock`, no config overrides**. Black-box HTTP (or other
-  protocol) tests only.
-- Common pattern: integration test extends the `@QuarkusTest` class and reuses its test methods, so the
-  same assertions verify the packaged form:
-
-  ```java
-  import io.quarkus.test.junit.QuarkusIntegrationTest;
-
-  @QuarkusIntegrationTest
-  class ${ResourceName}IT extends ${ResourceName}Test {
-  }
-  ```
+- Runs the packaged artifact using production configuration; the integration test process is separate from the app: no CDI injection, `@InjectMock`, or test-process config override for the packaged application. `src/test/resources` application configuration is not used by this packaged test process. Use black-box public interfaces.
+- Write a separate integration test class by default. Do not assume an injectable `@QuarkusTest` parent; reuse a test parent only when source and build configuration prove it is compatible without CDI assumptions.
 
 - Only worth it when packaging/startup itself is part of the risk (native image, container, CLI). For
   ordinary regression checks the `@QuarkusTest` variant covers the same endpoints.
@@ -55,14 +44,12 @@ Three levels, three different costs. Pick the cheapest one that can still fail f
 | Name pattern | Runner | Phase |
 |---|---|---|
 | `${...}Test` | surefire | `./mvnw test` |
-| `${...}IT` | failsafe | `./mvnw verify` |
+| `${...}IT` | failsafe | `./mvnw verify -DskipITs=false` (after confirming target POM bindings; generated Quarkus 3.20.3 POM defaults Failsafe to skipped) |
 
 - Maven failsafe's default includes are `**/IT*.java`, `**/*IT.java`, `**/*ITCase.java` — a class named
   `GreetingIT` runs under `verify`; `GreetingTest` runs under `test`.
 - Gradle: the two types need different source sets and tasks (`test` vs `quarkusIntTest`) — do not mix.
-- **Never schedule `@QuarkusTest` and `@QuarkusIntegrationTest` in the same run** — they boot the app in
-  two incompatible ways. Running them is `quarkus-run-tests`' job; this rule is why the naming matters
-  when you write the test.
+- Maven Surefire and Failsafe are separate runners/phases, but a single `mvn verify` can execute both; this is valid. Gradle uses separate source sets/tasks. Report what each invocation actually ran.
 
 ## Anti-patterns
 

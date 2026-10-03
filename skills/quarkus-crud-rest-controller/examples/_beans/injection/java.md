@@ -26,30 +26,31 @@ public ${ResourceName}(${RepoFqn} ${repoFieldName}, ${MapperFqn} ${mapperFieldNa
 }
 ```
 
-### repository + mapper + ObjectMapper (DTO mode, PATCH or PATCH_MANY selected)
+### repository + mapper + ObjectMapper + Validator (DTO mode, PATCH or PATCH_MANY selected)
 <!-- ObjectMapper is a built-in CDI bean (quarkus-jackson, bundled by quarkus-rest-jackson).
      Inject it; customize serialization via ObjectMapperCustomizer beans, not by hand-building a mapper. -->
 ```java
 private final ${RepoFqn} ${repoFieldName};
 private final ${MapperFqn} ${mapperFieldName};
 private final ${ObjectMapperFqn} objectMapper;
+private final jakarta.validation.Validator validator;
 
-public ${ResourceName}(${RepoFqn} ${repoFieldName}, ${MapperFqn} ${mapperFieldName}, ${ObjectMapperFqn} objectMapper) {
+public ${ResourceName}(${RepoFqn} ${repoFieldName}, ${MapperFqn} ${mapperFieldName}, ${ObjectMapperFqn} objectMapper, jakarta.validation.Validator validator) {
     this.${repoFieldName} = ${repoFieldName};
     this.${mapperFieldName} = ${mapperFieldName};
     this.objectMapper = objectMapper;
+    this.validator = validator;
 }
 ```
 
-### repository + ObjectMapper (no DTO, PATCH or PATCH_MANY selected)
-(same ObjectMapper injectability note as the previous variant)
+### repository + Validator (no DTO, PATCH or PATCH_MANY selected)
 ```java
 private final ${RepoFqn} ${repoFieldName};
-private final ${ObjectMapperFqn} objectMapper;
+private final jakarta.validation.Validator validator;
 
-public ${ResourceName}(${RepoFqn} ${repoFieldName}, ${ObjectMapperFqn} objectMapper) {
+public ${ResourceName}(${RepoFqn} ${repoFieldName}, jakarta.validation.Validator validator) {
     this.${repoFieldName} = ${repoFieldName};
-    this.objectMapper = objectMapper;
+    this.validator = validator;
 }
 ```
 
@@ -58,6 +59,9 @@ public ${ResourceName}(${RepoFqn} ${repoFieldName}, ${ObjectMapperFqn} objectMap
 @jakarta.inject.Inject
 ${RepoFqn} ${repoFieldName};
 ```
+
+### Validator injection (any PATCH or PATCH_MANY)
+The PATCH-specific constructor variants above include the final Validator field and constructor parameter. Do not add a second copy.
 
 ## Variables
 | Variable | Source | Default |

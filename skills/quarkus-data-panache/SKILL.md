@@ -14,6 +14,9 @@ description: >
 
 # Preflight — Project detection (before any work)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools — no MCP server or IDE integration is required.
 
 Detect the persistence setup from the build files before touching any code:
@@ -25,7 +28,7 @@ Detect the persistence setup from the build files before touching any code:
    [`references/reactive.md`](references/reactive.md) before writing any persistence code;
    `quarkus-hibernate-orm` without a Panache extension → plain Hibernate ORM: the Panache-specific rules
    (Active Record statics, `PanacheQuery`, `PanacheRepository`) do not apply, the JPA mapping rules in
-   [`references/entity-rules-impl.md`](references/entity-rules-impl.md) still do.
+   [`references/entity-rules-impl.md`](references/entity-rules-impl.md) still do; do not generate Panache APIs unless a Panache extension is present.
    If both blocking and reactive Panache extensions are present, stop before generating code and ask which
    persistence mode this task targets; use the imports and return types for only that mode, rather than
    mixing blocking and reactive APIs implicitly.
@@ -114,13 +117,17 @@ If no deviations are found — state that the project follows best practices.
 
 ---
 
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
+
 ## Anti-hallucination checklist
 
 - [ ] Persistence mode (blocking Panache / reactive Panache / plain Hibernate ORM) confirmed from the build
       file before writing code.
 - [ ] Panache style (Active Record vs repository) taken from the project's existing code, not invented.
 - [ ] Entity conventions (base class, id strategy, field access, naming, equals/hashCode) resolved from real
-      code with confidence scores — uncertainties asked, not guessed.
+      code using source evidence; ask only when an unresolved choice changes behavior.
 - [ ] PanacheQL strings use the documented parameter forms only; every value is bound, never concatenated
       into the query string.
 - [ ] Every write path has an active transaction; the annotation import is `jakarta.transaction.Transactional`.

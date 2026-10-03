@@ -2,7 +2,6 @@
 
 ## Step 4 -- Generate code
 
-Tell the user: `Step 4/5: Generating mapper...`
 
 Determine the reference file based on mapper type:
 - MapStruct + Java -> read [`references/mapstruct-java.md`](../references/mapstruct-java.md)
@@ -41,7 +40,7 @@ Compare entity fields from `${entityDetails}` with DTO fields from `${dtoFields}
 - `${dtoParamName}` -> decapitalized DTO short name
 - `${methodName}` -> from naming conventions (see [`references/method-naming.md`](../references/method-naming.md))
 - **NEVER substitute anything not listed in the Variables section of the example file**
-- **NEVER add imports, methods, or code not in the example**
+- Use examples for framework/API call shapes; adapt imports, package/type names, and source-backed fields/accessors to the project and request. Never invent framework APIs; verify an uncovered required API from an applicable official source or stop.
 - **FQN handling (CRITICAL):** examples contain FQNs (e.g. `org.mapstruct.Mapper`,
   `org.mapstruct.Mapping`, `org.mapstruct.ReportingPolicy`,
   `org.mapstruct.MappingConstants.ComponentModel.CDI`, entity/DTO FQNs). When

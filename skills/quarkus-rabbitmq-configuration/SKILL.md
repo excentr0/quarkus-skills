@@ -34,6 +34,9 @@ extension dependency is on the classpath.
 
 ## Preflight — Project detection (before Step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 Harness-agnostic: file tools and shell commands only — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
@@ -111,7 +114,6 @@ prior turns, and the user's prompt. Only ask when context yields no clear defaul
 
 ## Step 0 — Conversation context (mental, no tool calls)
 
-Tell the user: `Step 0/6: Analyzing conversation context...`
 
 Re-read the user's prompt and prior turns; tick off everything already stated:
 
@@ -132,7 +134,6 @@ Tick → skip the corresponding question. Do not announce Step 0.
 
 ## Step 1 — Gather context (file reads + greps, no MCP)
 
-Tell the user: `Step 1/6: Gathering context...`
 
 | Source | Variables extracted |
 |---|---|
@@ -156,7 +157,6 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 ## Step 2 — All questions in ONE batch
 
-Tell the user: `Step 2/6: Asking all questions...`
 
 Ask the path question first, then ask only the questions that apply to that path. Pre-fill from context
 and skip already-answered:
@@ -181,7 +181,6 @@ use `java.lang.String` after confirming the payload type.
 
 ## Step 3 — Bean target (Path B only)
 
-Tell the user: `Step 3/6: Picking bean target...`
 
 If `existingBeanClasses` is non-empty, apply Decision principle 2 (one-line confirmation), naming the class:
 
@@ -199,7 +198,6 @@ Usually answered silently from context.
 
 ## Step 4 — Write channel configuration + add dependency
 
-Tell the user: `Step 4/6: Writing channel configuration...`
 
 ### 4a. Channel configuration
 
@@ -228,7 +226,6 @@ non-Quarkus dependencies to the extension command.
 
 ## Step 5 — Generate messaging beans (Path B only)
 
-Tell the user: `Step 5/6: Generating messaging beans...`
 
 1. Pick the example per direction:
    - consumer → [`examples/consumer-bean.md`](examples/consumer-bean.md)
@@ -252,7 +249,6 @@ Tell the user: `Step 5/6: Generating messaging beans...`
 
 ## Step 6 — Report
 
-Tell the user: `Step 6/6: Reporting...`
 
 Match the user's conversation language. Include:
 - Path taken (config-only vs config + beans).
@@ -267,6 +263,10 @@ Match the user's conversation language. Include:
   available on the random `http-port` in dev.
 - If the consumer body was left as a comment stub — say so and ask what the handling should be.
 - `orphanChannels` that remain unconfigured, if any.
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

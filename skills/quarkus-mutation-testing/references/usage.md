@@ -2,7 +2,7 @@
 
 ## Run it and collect the result — in ONE runner
 
-If your harness supports subagents, delegate the run + result collection to ONE subagent; otherwise run
+Delegate the run + result collection only when the caller/operator permits delegation and the environment supports it; otherwise run
 directly. Either way the long PIT output must not flood the conversation — the runner's only job is the
 summary defined in `references/report.md`.
 

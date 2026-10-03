@@ -24,6 +24,9 @@ Use [`references/configuration.md`](references/configuration.md) for build setup
 
 ## Preflight — project detection
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: file tools plus shell commands — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
@@ -59,7 +62,6 @@ just said.
 Otherwise follow `references/configuration.md`, which applies the test-scope decision from
 `references/quarkus-tests.md` and the exclusions from `references/exclusions.md` as part of the setup.
 
-Tell the user: `Step 1/4: Configuring PIT...`
 
 If step 3 then fails with a task/plugin-not-found error, the entry was stale: say so, run this step
 after all, and continue.
@@ -72,7 +74,6 @@ after all, and continue.
 Otherwise follow [`references/exclusions.md`](references/exclusions.md). It answers a question as well as it applies a change —
 when the request is only a question, stop after judging the candidate and leave the build alone.
 
-Tell the user: `Step 2/4: Reviewing what gets mutated...`
 
 ### 3. Run PIT and report the score
 
@@ -82,7 +83,6 @@ a run is available and stop there.
 Otherwise follow [`references/usage.md`](references/usage.md). The report itself follows
 [`references/report.md`](references/report.md).
 
-Tell the user: `Step 3/4: Running PIT...`
 
 ### 4. Record what was resolved
 
@@ -92,9 +92,12 @@ Otherwise write or update the `pitest` entry in the shape [`references/configura
 This is what lets step 1 be skipped next time — dropping it makes the next run pay for the version
 probing and test-scope analysis all over again.
 
-Tell the user: `Step 4/4: Recording what was resolved...`
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

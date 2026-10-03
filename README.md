@@ -22,7 +22,7 @@ Quarkus Skills give the agent a narrower, Quarkus-aware model of work:
 
 - extension- and build-file-driven preflight instead of guessed stack assumptions
 - verified Quarkus APIs: Panache, `quarkus-rest`, `@ServerExceptionMapper`, OIDC, Reactive Messaging
-- conventions scoring from the project's own code before generating anything
+- source-based convention choices taken from the project's own code before generating anything
 - code templates with explicit `${variables}` instead of hallucinated snippets
 
 ## What's Inside
@@ -32,9 +32,9 @@ Quarkus Skills give the agent a narrower, Quarkus-aware model of work:
 | [`quarkus-explore`](skills/quarkus-explore/SKILL.md) | Explore a Quarkus application and gather project context: stack, build system, extensions, domain entities, repositories, resources, config. | Ready |
 | [`quarkus-planning`](skills/quarkus-planning/SKILL.md) | Create a structured implementation plan in `docs/plans/`: context gathering, approach selection, task decomposition. | Ready |
 | [`quarkus-data-panache`](skills/quarkus-data-panache/SKILL.md) | Work with Panache entities (Active Record) and repositories, PanacheQL queries, transactions, reactive variant. | Ready |
-| [`quarkus-crud-rest-controller`](skills/quarkus-crud-rest-controller/SKILL.md) | Create JAX-RS resources with CRUD endpoints backed by a Panache repository, optionally with DTOs, mapping, and pagination. | Ready |
+| [`quarkus-crud-rest-controller`](skills/quarkus-crud-rest-controller/SKILL.md) | Create synchronous JAX-RS CRUD resources backed by Panache; optional DTO/mapping, pagination, and supported scalar PATCH variants. | Ready |
 | [`quarkus-dto-creator`](skills/quarkus-dto-creator/SKILL.md) | Create DTOs for entities: Java records or plain classes, with validation. | Ready |
-| [`quarkus-mapper-creator`](skills/quarkus-mapper-creator/SKILL.md) | Create mappers between entities and DTOs via MapStruct (`quarkus-mapstruct`) or a custom converter. | Ready |
+| [`quarkus-mapper-creator`](skills/quarkus-mapper-creator/SKILL.md) | Map entities and DTOs with core MapStruct/annotation processing, an optional Quarkiverse extension when compatible, or a custom converter. | Ready |
 | [`quarkus-security-configuration`](skills/quarkus-security-configuration/SKILL.md) | Configure authentication and authorization: quarkus-oidc (bearer / code flow), path policies, `@RolesAllowed`. | Ready |
 | [`quarkus-kafka-configuration`](skills/quarkus-kafka-configuration/SKILL.md) | Configure Kafka messaging: channels, `@Incoming`/`@Outgoing`/`@Channel`, serializers, Dev Services. | Ready |
 | [`quarkus-rabbitmq-configuration`](skills/quarkus-rabbitmq-configuration/SKILL.md) | Configure RabbitMQ messaging: channels, queues/exchanges/routing keys, `@Incoming`/`@Outgoing`/`@Channel`, JSON payloads, Dev Services. | Ready |
@@ -68,8 +68,12 @@ Skills follow shared principles:
   mode from the build files before generating anything.
 - **Context first, then ask** — half of the questions are answered by the project code and
   conversation; only genuine decisions are asked, via the harness's structured-question tool.
-- **Code only from examples** — every code fragment comes from an `examples/` file with explicit
+- **Code only from examples** — generated fragments come from bundled `examples/` files with explicit
   `${variables}`; if no example matches, the agent stops and asks instead of inventing code.
+- **Bounded generation scope** — the CRUD resource skill targets synchronous Panache resources and
+  only the scalar PATCH forms explicitly supported by its templates; it does not imply every entity
+  shape or reactive variant is covered.
+- **Portable bundles** — each skill carries its own linked `references/` and `examples/`; repository-level facts and sibling skills are optional handoffs with a local fallback when unavailable.
 - **Anti-hallucination checklist** — every skill ends with one; Quarkus facts live in
   [`docs/quarkus-facts.md`](docs/quarkus-facts.md).
 
@@ -95,8 +99,30 @@ Add a CRUD REST resource for Customer using DTOs and MapStruct.
 
 ```bash
 python3 scripts/validate_skills.py
+python3 -m unittest discover -s scripts/tests -v
+python3 scripts/validate_skills.py --standalone
+python3 scripts/run_template_fixture.py
 git diff --check
 ```
+
+Frontmatter validation deliberately supports this repository's subset—flat string fields and folded/literal `description` blocks—not arbitrary YAML; flow values, tags, aliases, and unsupported quoted escapes are rejected. `evals/execution-catalog.json` defines automated commands and manual scenarios, not execution results. Fresh command output and XML reports are the evidence for a run. A negative routing seed checks that its probed primary skill is absent; listed `allowed_companions` permit legitimate other skill reads without weakening that prohibition.
+
+The template fixture needs Java 21 and Maven; it uses Quarkus 3.20.3 with H2. The CI JVM fixture
+verifies selected public-field, DTO/MapStruct, and setter-based paths. It does not verify native-image
+behavior or a Gradle build. The optional Quarkiverse MapStruct extension must be checked against the
+target Quarkus version; the fixture uses core MapStruct/CDI because the tested extension release was
+incompatible with Quarkus 3.20.3.
+
+To compare **captured** skill-read traces against the routing seed expectations:
+
+```bash
+python3 scripts/evaluate_routing_traces.py --traces "/path/to/captured-read-traces.json" --output /tmp/routing-evaluation.json
+```
+
+This evaluator does not choose or route skills. It only compares externally captured read/handoff/
+stop records with the seed catalog. Missing trace data is `NOTRUN`; without captured runs, seed
+coverage is static validation, not measured routing accuracy. Unit tests use synthetic traces and
+are not evidence of real routing behavior.
 
 ## License
 

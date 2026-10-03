@@ -10,6 +10,9 @@ description: >
 
 # Preflight — Project detection
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP
 server or IDE integration is required.
 
@@ -40,7 +43,7 @@ a Panache entity and a DTO.
 
 ---
 
-> **CRITICAL: Code ONLY from examples/ files. If no matching example -- STOP and ask user.**
+> **CRITICAL: Use examples/ fragments for framework/API calls; never invent a framework API. Adapt imports, packages, names, and source-backed fields/accessors to the requested contract. If a required framework/API shape is not covered by the examples, verify it from an applicable official source or stop and ask.
 > **CRITICAL: For questions with a fixed set of choices, prefer your harness's structured-question tool (`AskUserQuestion` / `ask_user_question`) > its analogue > plain text list. Plain numbered text lists are the last resort when no interactive tool is available.**
 > **CRITICAL: Read the conversation context BEFORE running Step 1.** Half the questions in Steps 2–3 may already be answered by the user's prompt and prior turns. Re-asking what was already said is the #1 reason this skill feels slow.
 
@@ -50,9 +53,9 @@ a Panache entity and a DTO.
 
 | Option | Default | Always ask? | Notes |
 |--------|---------|-------------|-------|
-| entity | — | YES | which entity to map |
-| dtoClass | — | YES | which DTO to map to |
-| mapperType | MapStruct | YES | main choice: MapStruct or Custom |
+| entity | — | ask only if absent from caller contract and source context | which entity to map |
+| dtoClass | — | ask only if absent from caller contract and source context | which DTO to map to |
+| mapperType | MapStruct | NO | follow an existing project mapper style; otherwise default to MapStruct. Ask only if the caller's intent or material constraints make the choice unresolved. |
 | className | `${EntityName}Mapper` | NO | suggest, confirm |
 | packageName | package next to DTO | NO | auto-determined |
 | parentInterface | null | NO | extend a common mapper interface |
@@ -179,9 +182,6 @@ answer is already determined by principles 1–3, **skip the question**.
 ---
 
 ## Step 1 -- Gather minimal project context (automatic, no questions)
-
-Tell the user: `Step 1/5: Gathering project context...`
-
 Read only the sources whose result is **actually consumed** by a later
 step. Do not pre-fetch "in case we need it" — every variable here must
 have a concrete downstream user.
@@ -215,9 +215,6 @@ Determine `componentModel` from the project shape:
 ---
 
 ## Step 2 -- Entity and DTO
-
-Tell the user: `Step 2/5: Reading entity and DTO...`
-
 By Step 0 you should already know entity and DTO if the user mentioned
 them. Most common cases:
 
@@ -253,9 +250,6 @@ They are NOT part of Step 1.
 ---
 
 ## Step 3 -- Mapper type and variant settings
-
-Tell the user: `Step 3/5: Mapper type and methods...`
-
 ### Mapper type — context first
 
 Apply the **Decision-making principle**. Decide silently when context is
@@ -266,7 +260,7 @@ clear:
 | User said "MapStruct" / "@Mapper" | MapStruct, no question |
 | User said "Custom" / "manually" / "static methods" | Custom, no question |
 | MapStruct already in `${presentDeps}` AND user gave no signal | MapStruct (silent or one-line confirmation per principle 2) |
-| MapStruct NOT in `${presentDeps}` AND project is small/simple | MapStruct is still a fine default — Step 5 will add the dependency. State this in the one-line confirmation: "Will create a MapStruct mapper. Will add the quarkus-mapstruct extension and the annotation processor to the build file. Alternative: Custom with no dependencies. OK?" |
+| MapStruct NOT in `${presentDeps}` AND project is small/simple | MapStruct is still a fine default — Step 5 will add the dependency. State this in the one-line confirmation: "Will create a MapStruct mapper. Will add the MapStruct API and annotation processor; the optional Quarkiverse extension requires target-version compatibility verification. Alternative: Custom with no dependencies. OK?" |
 | User says "use defaults" | MapStruct |
 
 Only fall back to the structured-question tool when **none** of the rows
@@ -302,16 +296,12 @@ user said "I want a different name" or "in a different package".
 ---
 
 ## Step 4 -- Generate code
-
-Tell the user: `Step 4/5: Generating mapper...`
-
 Before generating, read [`references/generation-workflow.md`](references/generation-workflow.md) and
 the selected MapStruct/custom reference.
 
 - **NEVER** substitute anything not listed in the Variables section of the example file.
-- **NEVER** add imports, methods, or code not in the example.
-- **FQN handling (CRITICAL):** examples contain FQNs. When writing the final file, you **MUST** shorten
-  them consistently and add sorted, non-duplicate imports while skipping same-package and `java.lang` types.
+- Use example fragments for framework/API calls; do not invent framework APIs. Adapt imports, package and type names, method identifiers, and source-backed fields/accessors to the actual project and request.
+- **FQN handling:** resolve actual FQNs from source and emit valid, non-duplicate imports for every shortened type, skipping same-package and `java.lang` types. Keep an FQN in place when shortening would be ambiguous.
 - **Entity accessors — Panache convention (CRITICAL):** Panache entities declare `public` fields, so
   custom mapper bodies use **direct field access** — read `pet.name`, write `pet.name = ...`, never
   `getName()`/`setName()`. If the entity source instead declares `private` fields with getters/setters,
@@ -321,9 +311,6 @@ the selected MapStruct/custom reference.
 ---
 
 ## Step 5 -- Add MapStruct dependencies (automatic, MapStruct variant only)
-
-Tell the user: `Step 5/5: Updating build file...`
-
 For Custom mapper, skip this step. For MapStruct, read
 [`references/mapstruct-dependencies.md`](references/mapstruct-dependencies.md) before editing the build.
 The MapStruct annotation processor **MUST** be configured explicitly; versions **MUST** come from the
@@ -331,14 +318,18 @@ project or be verified against the official extension/source before writing them
 
 ---
 
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
+
 ## Anti-hallucination checklist
 
 Before writing ANY code, verify:
-- [ ] The code comes from an examples/ file (cite which one)
+- [ ] Framework/API calls use documented example fragments (cite them); project types and members come from source
 - [ ] Only declared variables were substituted
 - [ ] No framework API calls were added "from knowledge"
-- [ ] Import list matches the example exactly
-- [ ] Method signatures match the example exactly
+- [ ] Imports resolve every shortened type, are valid and non-duplicate, and follow the project's import ordering where known
+- [ ] Method signatures follow the requested mapper contract and use actual source types/accessors
 - [ ] No comments or convenience methods were added
 - [ ] FQNs from examples are shortened in the body AND corresponding `import` lines were added after `package` (the IDE will NOT do this for you)
 - [ ] `@Mapping` annotations match entity-DTO field comparison, not guessed

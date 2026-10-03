@@ -1,27 +1,21 @@
 # PATCH_MANY method (Java)
 
 ## Insert Point
-As new method in the resource class body, after the last method.
+Add the shared PATCH helpers from `patch/java.md` once if not already present; insert this endpoint for PATCH_MANY.
 
 ## Code
 
-### defaults
-No DTO:
+### no DTO
 ```java
 @jakarta.ws.rs.PATCH
 @jakarta.transaction.Transactional
-public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java.util.List<${IdType}> ids, ${JsonNodeFqn} patchNode) {
+public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java.util.List<${IdType}> ids, com.fasterxml.jackson.databind.JsonNode patchNode) {
+    assertPatchAllowed(patchNode);
     java.util.List<${EntityFqn}> ${entityVarPlural} = ${repoFieldName}.list("id in ?1", ids);
-    for (${EntityFqn} ${entityVar} : ${entityVarPlural}) {
-        try {
-            objectMapper.readerForUpdating(${entityVar}).readValue(patchNode);
-        } catch (${JsonProcessingExceptionFqn} e) {
-            throw new jakarta.ws.rs.BadRequestException("Invalid patch payload: " + e.getMessage());
-        }
+    for (${EntityFqn} entity : ${entityVarPlural}) {
+        applyPatch(entity, patchNode);
     }
-    return ${entityVarPlural}.stream()
-            .map(entity -> ${idAccessExpression})
-            .toList();
+    return ${entityVarPlural}.stream().map(entity -> ${idAccessExpression}).toList();
 }
 ```
 
@@ -29,44 +23,36 @@ public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java
 ```java
 @jakarta.ws.rs.PATCH
 @jakarta.transaction.Transactional
-public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java.util.List<${IdType}> ids, ${JsonNodeFqn} patchNode) {
+public java.util.List<${IdType}> patchMany(@jakarta.ws.rs.QueryParam("ids") java.util.List<${IdType}> ids, com.fasterxml.jackson.databind.JsonNode patchNode) {
+    assertPatchAllowed(patchNode);
     java.util.List<${EntityFqn}> ${entityVarPlural} = ${repoFieldName}.list("id in ?1", ids);
-    for (${EntityFqn} ${entityVar} : ${entityVarPlural}) {
-        ${DtoFqn} ${dtoVar} = ${mapperFieldName}.${toDtoMethodName}(${entityVar});
-        try {
-            // records are immutable — merge via Map instead of readerForUpdating
-            java.util.Map<String, Object> current = objectMapper.convertValue(${dtoVar}, java.util.Map.class);
-            current.putAll(objectMapper.convertValue(patchNode, java.util.Map.class));
-            ${dtoVar} = objectMapper.convertValue(current, ${DtoFqn}.class);
-        } catch (java.lang.IllegalArgumentException e) {
-            throw new jakarta.ws.rs.BadRequestException("Invalid patch payload: " + e.getMessage());
-        }
-        ${mapperFieldName}.${updateEntityMethodName}(${dtoVar}, ${entityVar});
+    for (${EntityFqn} entity : ${entityVarPlural}) {
+        ${DtoFqn} current = ${mapperFieldName}.${toDtoMethodName}(entity);
+        ${DtoFqn} merged = mergePatchDto(current, patchNode);
+        validatePatchState(merged);
+        ${mapperFieldName}.${updateEntityMethodName}(merged, entity);
+        validatePatchState(entity);
     }
-    return ${entityVarPlural}.stream()
-            .map(entity -> ${idAccessExpression})
-            .toList();
+    return ${entityVarPlural}.stream().map(entity -> ${idAccessExpression}).toList();
 }
 ```
 
 ## Variables
 | Variable | Source | Default |
-|----------|--------|---------|
-| `${EntityFqn}` | entity FQN | -- |
-| `${DtoFqn}` | DTO FQN | -- |
-| `${dtoVar}` | decapitalized DTO name | -- |
-| `${IdType}` | entity ID type (boxed) | -- |
-| `${repoFieldName}` | repository field name | -- |
-| `${entityVar}` | decapitalized entity name | -- |
-| `${entityVarPlural}` | pluralized entity var | -- |
-| `${idAccessExpression}` | ID access inside a lambda whose parameter is `entity` (Step 2) | `entity.id` (or `entity.getId()`) |
-| `${mapperFieldName}` | mapper field name | -- |
-| `${toDtoMethodName}` | mapper entity->DTO method | `to${DtoShortName}` |
-| `${updateEntityMethodName}` | mapper method copying DTO into an existing entity | `partialUpdate` |
-| `${JsonNodeFqn}` | Jackson JsonNode FQN, resolved in Step 1 | `com.fasterxml.jackson.databind.JsonNode` |
-| `${JsonProcessingExceptionFqn}` | Jackson exception FQN (no-DTO variant; the DTO variant catches unchecked `java.lang.IllegalArgumentException`) | `com.fasterxml.jackson.core.JsonProcessingException` |
+|---|---|---|
+| `${EntityFqn}` | entity FQN | — |
+| `${DtoFqn}` | DTO FQN | — |
+| `${IdType}` | boxed entity ID type | — |
+| `${repoFieldName}` | repository field name | — |
+| `${entityVarPlural}` | pluralized entity variable | — |
+| `${idAccessExpression}` | ID access for lambda parameter `entity` | `entity.id` or `entity.getId()` |
+| `${mapperFieldName}` | mapper field name | — |
+| `${toDtoMethodName}` | entity-to-DTO mapper method | `to${DtoShortName}` |
+| `${updateEntityMethodName}` | safe mapper method updating existing entity | `partialUpdate` |
+| `${patchAssignments}` | no-DTO concrete field writes, as in `patch/java.md` | required no-DTO |
+| `${patchTypeChecks}` | shared per-field type/range checks, as in `patch/java.md` | required |
 
 ## Notes
-- Returns the IDs of the patched rows.
-- The same patch payload is applied to every selected entity.
-- Entities are managed inside the transaction — changes are flushed on commit.
+- Preserves the `ids` query parameter API and returns patched IDs.
+- Reuse `assertPatchAllowed` and `validatePatchState` from `patch/java.md` once. No-DTO PATCH_MANY also inserts the no-DTO `applyPatch(Entity, JsonNode)` helper from `patch/java.md` once; it is absent in DTO mode. DTO methods use shared `${patchTypeChecks}` allowlist/type checks and safe mapper contract. `${patchTypeChecks}` executes before loading/mutation; inject a `Validator` for every variant.
+- Validation failure or any later batch failure escapes as an unchecked exception from the transaction, rolling back all batch changes.

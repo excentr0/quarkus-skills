@@ -23,11 +23,11 @@ Optional<Entity> result = find("${columnName} = :name and ${otherColumn} = :stat
 ## Named query (`#` prefix)
 
 ```java
+// Example: @NamedQuery(name = "Person.findByName", query = "from Person p where p.name = ?1")
 Optional<Entity> result = find("#${EntityName}.${queryName}", ${value}).firstResultOptional();
 ```
 
-A named query is declared with `@NamedQuery` / `@NamedQueries` on the entity class (or its super class) and
-referenced by name with the `#` prefix — the same form works for `count`, `update`, and `delete`.
+A named query is declared with `@NamedQuery` / `@NamedQueries` on the entity class (or its mapped superclass). Its registered JPA name is `${EntityName}.${queryName}`; Panache references that registered name with a `#` query prefix. The same Panache form works for `count`, `update`, and `delete`.
 
 ## List with ordering
 

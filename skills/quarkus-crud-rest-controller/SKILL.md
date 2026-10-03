@@ -11,6 +11,9 @@ description: >
 
 # Preflight — Project detection (before step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 This skill is harness-agnostic: it uses only file tools and shell commands — no MCP
 server or IDE integration is required.
 
@@ -69,7 +72,7 @@ Decision-making principle (derive from context → confirm → ask).
 
 | Option | Default | Notes |
 |--------|---------|-------|
-| DTO mode | DTO (recommended) | if no existing DTO for the entity, delegate to `quarkus-dto-creator`; user can opt out to use the entity directly |
+| DTO mode | DTO (recommended) | if no existing DTO is available, apply the `quarkus-dto-creator` workflow; user can opt out to use the entity directly |
 
 ### Block 3 — Resource naming & paths
 
@@ -190,7 +193,7 @@ script to execute top-to-bottom. If a question's answer is already determined by
 
 ## Step 0 -- Conversation context first (REQUIRED, no tool calls)
 
-Tell the user: `Step 0/6: Analyzing conversation context...`
+
 
 Before any file read, before any question, **re-read the user's prompt and the prior turns of
 this conversation** and extract whatever is already stated. This step costs nothing and prevents
@@ -228,9 +231,6 @@ Just internalize what the user already said before proceeding to Step 1.
 ---
 
 ## Step 1 -- Gather minimal project context (automatic, no questions)
-
-Tell the user: `Step 1/6: Gathering project context...`
-
 Before this step, read [`references/context-gathering.md`](references/context-gathering.md). It
 contains the lazy file-operation table and derived flags. Read only the files consumed by later
 steps; defer entity, repository, DTO and mapper reads until their selection steps.
@@ -238,15 +238,11 @@ steps; defer entity, repository, DTO and mapper reads until their selection step
 ---
 
 ## Step 2 -- Select entity
-
-Tell the user: `Step 2/6: Selecting entity...`
-
 By Step 0 you should already know the entity if the user mentioned it.
 Most common case: the user wrote "create CRUD resource for Product" → entity is `Product`, skip
 the question, go straight to the read below.
 
-**Lazy fallback — only when entity is unknown:** grep `@jakarta.persistence.Entity` across
-`src/main/java` → list of entity classes, then ask with the structured-question tool (options =
+**Lazy fallback — only when entity is unknown:** search Java sources for both `@Entity` and `@jakarta.persistence.Entity` (and `PanacheEntity` subclasses) across the target module → list of entity classes, then ask with the structured-question tool (options =
 entity names from the list, max 4; if more than 4 entities, use the 4 most likely candidates
 based on context and add a note that the user can type a different name via "Other").
 
@@ -263,18 +259,14 @@ After the entity FQN is known, read the entity source file and extract:
   `entity.id` when the entity extends `PanacheEntity`/`PanacheEntityBase` with a public `id` field
   (Panache convention, default), or `entity.getId()` when the ID is exposed through a getter
 - Whether the entity has validation annotations (`jakarta.validation.constraints.*`) --> `entityHasValidation`
-- Whether the entity extends `PanacheEntity`/`PanacheEntityBase` (Active Record available) or is a plain `@Entity`
+- Whether the confirmed `@Entity` extends `PanacheEntity`/`PanacheEntityBase` (Active Record API available) or is plain JPA; Panache mapped-superclass inheritance alone does not establish that the class is an entity
 
 ---
 
 ## Step 3 -- Select repository
+For DTO + PATCH, pass the mapper skill an explicit contract: entity and DTO FQNs, `toDto`, the required update method (`partialUpdate` unless the project has another established name), destination-entity mutation, mutable field allowlist, and null semantics. Do not change mapper defaults globally: its partial update is opt-in. If CRUD operations are resource-level writes, say so; this skill does not invent a service-layer architecture.
 
-Tell the user: `Step 3/6: Selecting repository...`
-
-By Step 0 you may already know the repository if the user mentioned it.
-
-Grep `implements io.quarkus.hibernate.orm.panache.PanacheRepository` and
-`PanacheRepositoryBase` across `src/main/java`, then read the `PanacheRepository<...>` /
+Search Java sources for imported short names and fully-qualified `PanacheRepository` / `PanacheRepositoryBase` references across the target module, then read the `PanacheRepository<...>` /
 `PanacheRepositoryBase<...>` type arguments to find repositories for this entity → `repos`.
 
 Then apply the Decision-making principle:
@@ -294,9 +286,6 @@ After selection:
 ---
 
 ## Step 4 -- DTO and customization questions
-
-Tell the user: `Step 4/6: Resolving DTO and customization...`
-
 Before this step, read [`references/customization-workflow.md`](references/customization-workflow.md).
 Resolve DTO/mapper, path, pagination, filtering, sorting, total-count, and `selectedMethods` from
 context first; ask only unresolved choices.
@@ -308,9 +297,6 @@ selected entity/DTO actually carries constraints.
 ---
 
 ## Step 5 -- Generate code
-
-Tell the user: `Step 5/6: Generating code...`
-
 Before generating, read [`references/generation-workflow.md`](references/generation-workflow.md) and
 load each selected example immediately before writing it. The reference contains the WA work units,
 method variants, substitutions, and edit order.
@@ -324,9 +310,6 @@ Guard rails for this step:
 ---
 
 ## Step 6 -- Dependencies & properties (automatic)
-
-Tell the user: `Step 6/6: Applying dependencies and properties...`
-
 1. Read [`examples/_dependencies/dependencies.md`](examples/_dependencies/dependencies.md)
 2. For each artifact NOT in `presentDeps`:
    - Use `buildFile` from Step 1 (Maven or Gradle).
@@ -341,6 +324,10 @@ Tell the user: `Step 6/6: Applying dependencies and properties...`
 5. Report: "Created resource {resourceName} with CRUD endpoints for {EntityName}. Added dependencies: [list]."
 
 ---
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

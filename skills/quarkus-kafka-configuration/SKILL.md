@@ -32,14 +32,19 @@ Ensures the extension dependency is on the classpath.
 
 ## Preflight — Project detection (before Step 0)
 
+Before rejecting the project or selecting a command, identify the target module. Inspect its build file plus root/parent build configuration for inherited Quarkus BOM/plugin, dependency management, and version properties/catalogs; use the target Maven module's effective POM when inheritance remains unclear. Prefer the project root wrapper with module selection (`-pl`/`-am` for Maven, `:module:task` for Gradle). If the wrapper is absent, check installed `mvn`/`gradle` and its version; if no usable tool is available, report a blocker/NOT RUN rather than calling the project invalid.
+
+
 Harness-agnostic: file tools and shell commands only — no MCP server or IDE integration.
 
 1. **Build system** — `pom.xml` (+ `mvnw`) → Maven; `build.gradle`/`build.gradle.kts` (+ `gradlew`) → Gradle.
 2. **Quarkus presence** — Maven: `io.quarkus.platform:quarkus-bom` in `pom.xml`; Gradle: plugin `id("io.quarkus")`.
    If absent — stop: this skill targets Quarkus projects.
 3. **Kafka extension** — `io.quarkus:quarkus-messaging-kafka` in the dependencies. Present or not — Step 4b fixes it.
-4. **Existing wiring** — grep `src/main` for `mp.messaging.` (channel config) and
-   `org.eclipse.microprofile.reactive.messaging` (`@Incoming`/`@Outgoing`/`@Channel`).
+4. **Existing wiring** — grep `src/main` for `mp.messaging.` (channel config) and actual Java
+   `@Incoming`/`@Outgoing`/`@Channel` declarations. Serializer autodetection requires a visible typed
+   declaration with a supported payload type and enabled `quarkus.messaging.kafka.serializer-autodetection.enabled`;
+   config-only work cannot infer autodetection from a channel property.
 5. **Config files** — detect `src/main/resources/application.properties` or `.yaml`/`.yml` only when
    `quarkus-config-yaml` is present. If YAML is selected without that extension or the native YAML
    structure cannot be handled safely, stop instead of writing properties syntax into it.
@@ -48,9 +53,9 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
 
 ## Two paths (Step 3 picks)
 
-- **Path A — `path = properties`** (default when messaging beans already exist). Only channel
-  configuration is written: `mp.messaging.<incoming|outgoing>.<channel>.connector=smallrye-kafka`, plus
-  `.topic`, serializer/deserializer, `group.id`. No Java is generated. The connector maps each **channel**
+- **Path A — `path = properties`** (default when messaging beans already exist). Write base channel
+  configuration (`connector`, and `topic` only when needed); add serializer/deserializer properties only
+  when the conditional rules below require them. No Java is generated. The connector maps each **channel**
   to a Kafka **topic**; `@Incoming`/`@Outgoing`/`@Channel` beans connect to channels by name.
 - **Path B — `path = beans`**. Channel configuration **plus** a generated `@ApplicationScoped` messaging
   bean: a consumer method (`@Incoming`), a producer (`@Channel Emitter<T>`), or both. Serializer settings
@@ -76,9 +81,7 @@ Harness-agnostic: file tools and shell commands only — no MCP server or IDE in
 | `packageName` | main package (package of existing messaging beans, else root package) | NO (Path B only) |
 | `language` | Java | NO — this repo's skills are Java-first |
 
-**Smart defaults.** If the user says "use defaults" / "all defaults" / "minimal configuration" → skip every
-`Always ask = NO` question and choose the path first. Ask value types only if the selected path is Path B;
-otherwise ask no bean-type questions. Ask anything else the user mentioned non-default.
+**Smart defaults.** If the user says "use defaults" / "all defaults" / "minimal configuration", choose the path first and skip resolved choices. Ask for value type in Path A only when no typed Java binding/caller input exists and explicit serde config is required; Path B asks only unresolved type inputs. Never let "defaults" imply a hidden payload type.
 
 **Smart answer recognition.** When the user provides a value directly ("publish `OrderEvent`", "consume
 `PaymentEvent`", "group `orders`"), accept it without asking again. Several answers in one message → accept all.
@@ -95,14 +98,12 @@ prior turns, and the user's prompt. Only ask when context yields no clear defaul
    channel names derived from the type, single `application.properties` file.
 2. **Strong signal → one-line confirmation.** State the decision and alternatives; the user can accept
    silently. Used for: reusing an existing messaging bean class, topic names defaulting to channel names.
-3. **No clear default → structured question** with the recommended option first. Choose `path` first;
-   only for Path B ask `valueType` and then `group.id` (keep-default option first).
+3. **No clear default → structured question** with the recommended option first. Choose `path` first; ask for value type whenever required by the selected path and not established by source/caller. Ask `group.id` only when its default is unsuitable.
 4. **Empty for a critical input → ask plainly.** Path B producer `valueType`; the handling behavior for a
    generated consumer (see Step 5).
 
 ## Step 0 — Conversation context (mental, no tool calls)
 
-Tell the user: `Step 0/6: Analyzing conversation context...`
 
 Re-read the user's prompt and prior turns; tick off everything already stated:
 
@@ -115,18 +116,17 @@ Re-read the user's prompt and prior turns; tick off everything already stated:
 | `group.id` | "consumer group `X`", "group id …" |
 | `path` | "just add config", "only properties", "create a consumer/producer", "add an Emitter" |
 | `className` / `packageName` | "name it `FooMessaging`", "in package …" |
-| smart defaults | "use defaults", "all defaults" → ask only `valueType` + `path` |
+| smart defaults | "use defaults", "all defaults" → choose path and derive types; ask only unresolved explicit-serde/bean types |
 
 Tick → skip the corresponding question. Do not announce Step 0.
 
 ## Step 1 — Gather context (file reads + greps, no MCP)
 
-Tell the user: `Step 1/6: Gathering context...`
 
 | Source | Variables extracted |
 |---|---|
 | `pom.xml` / `build.gradle(.kts)` | `buildFile`, `buildTool`, `quarkusVersion`, `presentDeps`, `mainPackage` (from source tree), module list |
-| detected config file (`.properties` or YAML) | `existingProps` — `mp.messaging.*`, `kafka.bootstrap.servers`, and `%dev.`/`%prod.` keys; read the selected format and redact passwords, tokens, auth headers, and credential-bearing URLs before retaining or reporting values |
+| detected config file (`.properties` or YAML) | `existingProps` — `mp.messaging.*`, `kafka.bootstrap.servers`, `quarkus.messaging.kafka.serializer-autodetection.enabled`, and `%dev.`/`%prod.` keys; read the selected format and redact passwords, tokens, auth headers, and credential-bearing URLs before retaining or reporting values |
 | grep `mp\.messaging\.` under `src/main` | `existingChannels` — channel names already configured, with direction |
 | grep `@Incoming\|@Outgoing\|@Channel` under `src/main/java` | `existingMessagingBeans` — class FQNs + file paths + the channel names each one uses |
 
@@ -137,6 +137,7 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 **Derived:**
 - `kafkaExtensionPresent` — `presentDeps` contains `io.quarkus:quarkus-messaging-kafka`. Skip Step 4b if true.
 - `singleConfigFile` — exactly one detected application config file (`.properties`/`.yaml`/`.yml`). Skip the config-file question if true.
+- `serdeAutodetectionEnabled` — resolved from `quarkus.messaging.kafka.serializer-autodetection.enabled`; usable only when enabled and a supported payload type is visible in an actual Java binding.
 - `existingBootstrapServers` — value of `kafka.bootstrap.servers` or `mp.messaging.<dir>.<ch>.bootstrap.servers` if present, else `null`; redact credentials if an endpoint contains them.
 - `existingGroupId` — value of any `mp.messaging.incoming.<ch>.group.id` if present, else `null`.
 - `existingBeanClasses` — from `existingMessagingBeans`; carries FQN, file path, declared channels. Used in Step 3.
@@ -145,7 +146,6 @@ select silently. Two or more, or all-zero → ask which module, then re-gather f
 
 ## Step 2 — All questions in ONE batch
 
-Tell the user: `Step 2/6: Asking all questions...`
 
 Ask the path question first, then ask only the questions that apply to that path. Pre-fill from context
 and skip already-answered:
@@ -153,7 +153,7 @@ and skip already-answered:
 1. **Where to put the wiring?** — detected config file only (Path A) / detected config file + messaging bean
    (Path B, Recommended when no `@Incoming`/`@Outgoing`/`@Channel` bean exists yet)
 
-If Path A is selected, skip producer/consumer value types and bean-target questions. If Path B is selected, ask:
+If Path A is selected, skip bean-target questions. Derive serde type from a visible typed Java binding or caller input; if no declaration exists and explicit serde config is needed, ask for the relevant incoming/outgoing type. If Path B is selected, ask:
 
 2. **Producer value type?** — options: `java.lang.String` (Recommended), `java.lang.Integer`,
    `java.lang.Long`, `java.util.UUID`, `Custom (specify FQN)`
@@ -164,12 +164,10 @@ If Path A is selected, skip producer/consumer value types and bean-target questi
 5. **Channel and topic names?** — only when a name cannot be derived: default channel is
    `${typeKebab}-in` / `${typeKebab}-out`, default topic = channel name. Skip when the user named them.
 
-If the user says "use defaults" — choose the path first, skip type questions for Path A, and for Path B
-use `java.lang.String` after confirming the producer value type.
+If the user says "use defaults", choose the path first. Path A still needs a source/caller-derived type when no typed binding is visible and explicit serde settings are needed; do not silently assume String. For Path B, derive type from visible declarations or ask when unresolved.
 
 ## Step 3 — Bean target (Path B only)
 
-Tell the user: `Step 3/6: Picking bean target...`
 
 If `existingBeanClasses` is non-empty, apply Decision principle 2 (one-line confirmation), naming the class:
 
@@ -187,36 +185,31 @@ Usually answered silently from context.
 
 ## Step 4 — Write channel configuration + add dependency
 
-Tell the user: `Step 4/6: Writing channel configuration...`
 
 ### 4a. Channel configuration
 
 Always write a channel block per direction that the task needs. Substitute `connector` and `topic` always;
 add serializer keys per [`examples/serializer-mapping.md`](examples/serializer-mapping.md).
 
-Incoming (consumer):
+Incoming (consumer, minimal base block):
 
 ```properties
 mp.messaging.incoming.${inChannel}.connector=smallrye-kafka
-mp.messaging.incoming.${inChannel}.topic=${inTopic}
-mp.messaging.incoming.${inChannel}.value.deserializer=${valueDeserializer}
 ```
 
-Outgoing (producer):
+Outgoing (producer, minimal base block):
 
 ```properties
 mp.messaging.outgoing.${outChannel}.connector=smallrye-kafka
-mp.messaging.outgoing.${outChannel}.topic=${outTopic}
-mp.messaging.outgoing.${outChannel}.value.serializer=${valueSerializer}
 ```
+
+Add `.topic=${inTopic}` / `.topic=${outTopic}` only when the topic is explicitly chosen or differs from the channel name. Add serde keys only under the conditions in the serializer-mapping reference below.
 
 Rules (all verified — see the checklist):
 
-- **Built-in types** (`String`, `Integer`, `Long`, `Double`, `UUID`, `Void`, Vert.x `JsonObject`): omit the
-  serializer/deserializer keys — Quarkus autodetects them from `@Incoming`/`@Outgoing`/`@Channel` declarations.
-  Add them explicitly only when the user asks for explicitness.
-- **POJO/custom types**: never omit — write the deserializer key for the consumer side and the serializer key
-  for the producer side (rows for POJOs in `examples/serializer-mapping.md`).
+- **Typed declarations present:** omit serde properties only when the actual declaration exposes a supported type AND serializer autodetection is enabled. Never infer typed declarations from config alone. `Void` is not in the supported autodetection list.
+- **Config-only/no visible typed declaration:** configure serde explicitly from a type supplied by the caller or verified elsewhere in project sources; if the payload type is unknown, ask. For supported built-in types explicit serializer/deserializer classes are in the mapping table.
+- **POJO/custom types:** the templates choose explicit serde classes as this skill's policy; this is not a claim that Quarkus can never autodetect them. JSON-B custom deserialization requires a concrete typed subclass; use only the verified supported forms.
 - `.topic=` is required only when the topic differs from the channel name (the connector defaults topic to the
   channel name). Write it anyway when the user named a topic explicitly.
 - `.group.id=` — write only when the user chose `specify`, or when the project has more than one incoming
@@ -248,7 +241,6 @@ non-Quarkus dependencies to the extension command.
 
 ## Step 5 — Generate messaging beans (Path B only)
 
-Tell the user: `Step 5/6: Generating messaging beans...`
 
 1. Pick the example per direction:
    - consumer → [`examples/consumer-bean.md`](examples/consumer-bean.md)
@@ -270,7 +262,6 @@ Tell the user: `Step 5/6: Generating messaging beans...`
 
 ## Step 6 — Report
 
-Tell the user: `Step 6/6: Reporting...`
 
 Match the user's conversation language. Include:
 - Path taken (config-only vs config + beans).
@@ -283,6 +274,10 @@ Match the user's conversation language. Include:
   that is not the case, e.g. a `%prod.` address or an existing broker config disables it).
 - If the consumer body was left as a comment stub — say so and ask what the handling should be.
 - `orphanChannels` that remain unconfigured, if any.
+
+## Portable resources and sibling handoffs
+
+This skill's relative `references/` and `examples/` are bundled with its directory. Repository-level `docs/quarkus-facts.md` is optional when the skill is installed alone; if absent, verify version-sensitive claims against official versioned documentation/source or the actual project dependencies. Before a sibling-skill handoff, check whether that sibling is available. If missing, say so and apply equivalent local instructions only when the complete relevant example is available; never pretend to read a missing file. Skill activation/handoff alone does not authorize a child agent; delegate mechanically only when caller/operator permission and environment support are both present.
 
 ## Anti-hallucination checklist
 

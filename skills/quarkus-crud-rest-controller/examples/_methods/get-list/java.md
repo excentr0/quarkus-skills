@@ -11,6 +11,9 @@ Pagination, no filter, no sort, no DTO:
 @jakarta.ws.rs.GET
 public java.util.List<${EntityFqn}> getAll(@jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                            @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
     return ${repoFieldName}.findAll()
             .page(io.quarkus.panache.common.Page.of(page, size))
             .list();
@@ -22,6 +25,9 @@ public java.util.List<${EntityFqn}> getAll(@jakarta.ws.rs.QueryParam("page") @ja
 @jakarta.ws.rs.GET
 public java.util.List<${DtoFqn}> getAll(@jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                         @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
     java.util.List<${EntityFqn}> ${entityVarPlural} = ${repoFieldName}.findAll()
             .page(io.quarkus.panache.common.Page.of(page, size))
             .list();
@@ -37,6 +43,9 @@ public java.util.List<${DtoFqn}> getAll(@jakarta.ws.rs.QueryParam("page") @jakar
 public java.util.List<${EntityFqn}> getAll(@jakarta.ws.rs.QueryParam("${filterParamName}") String ${filterParamName},
                                            @jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                            @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
     io.quarkus.hibernate.orm.panache.PanacheQuery<${EntityFqn}> query = (${filterParamName} == null || ${filterParamName}.isBlank())
             ? ${repoFieldName}.findAll()
             : ${repoFieldName}.find("${filterFieldName} like ?1", "%" + ${filterParamName} + "%");
@@ -50,6 +59,9 @@ public java.util.List<${EntityFqn}> getAll(@jakarta.ws.rs.QueryParam("${filterPa
 public java.util.List<${DtoFqn}> getAll(@jakarta.ws.rs.QueryParam("${filterParamName}") String ${filterParamName},
                                         @jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                         @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
     io.quarkus.hibernate.orm.panache.PanacheQuery<${EntityFqn}> query = (${filterParamName} == null || ${filterParamName}.isBlank())
             ? ${repoFieldName}.findAll()
             : ${repoFieldName}.find("${filterFieldName} like ?1", "%" + ${filterParamName} + "%");
@@ -65,8 +77,11 @@ public java.util.List<${DtoFqn}> getAll(@jakarta.ws.rs.QueryParam("${filterParam
 @jakarta.ws.rs.GET
 public java.util.List<${EntityFqn}> getAll(@jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                            @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
-    return ${repoFieldName}.findAll()
-            .page(io.quarkus.panache.common.Page.of(page, size), io.quarkus.panache.common.Sort.by("${sortFieldName}"))
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
+    return ${repoFieldName}.findAll(io.quarkus.panache.common.Sort.by("${sortFieldName}"))
+            .page(io.quarkus.panache.common.Page.of(page, size))
             .list();
 }
 ```
@@ -95,6 +110,9 @@ public java.util.List<${DtoFqn}> getAll() {
 @jakarta.ws.rs.GET
 public jakarta.ws.rs.core.Response getAll(@jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                           @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
     io.quarkus.hibernate.orm.panache.PanacheQuery<${EntityFqn}> query = ${repoFieldName}.findAll()
             .page(io.quarkus.panache.common.Page.of(page, size));
     return jakarta.ws.rs.core.Response.ok(query.list())
@@ -108,6 +126,9 @@ public jakarta.ws.rs.core.Response getAll(@jakarta.ws.rs.QueryParam("page") @jak
 @jakarta.ws.rs.GET
 public jakarta.ws.rs.core.Response getAll(@jakarta.ws.rs.QueryParam("page") @jakarta.ws.rs.DefaultValue("0") int page,
                                           @jakarta.ws.rs.QueryParam("size") @jakarta.ws.rs.DefaultValue("20") int size) {
+    if (page < 0 || size < 1 || size > 100) {
+        throw new jakarta.ws.rs.BadRequestException("page must be non-negative and size must be between 1 and 100");
+    }
     io.quarkus.hibernate.orm.panache.PanacheQuery<${EntityFqn}> query = ${repoFieldName}.findAll()
             .page(io.quarkus.panache.common.Page.of(page, size));
     java.util.List<${DtoFqn}> ${dtoVarPlural} = query.list().stream()

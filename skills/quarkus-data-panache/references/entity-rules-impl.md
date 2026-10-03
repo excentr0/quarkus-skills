@@ -181,9 +181,7 @@ private Set<Specialty> specialties;
 - Entity queries (`find`, `list`, `count`, `delete`, `update`, `stream`) target the entity named by the
   calling class — no `FROM Entity` prefix is needed unless the query joins another entity
 - Updates and deletes return the number of affected rows; keep the returned value when the caller needs it
-- Named queries: declare them with `@NamedQuery`/`@NamedQueries` on the entity (or its super class) and
-  reference the name with the `#` prefix — `find("#Person.getByName", name)`, or
-  `count("#Person.countByStatus", Map.of("status", status))` for a counted query
+- Named queries: declare them with `@NamedQuery`/`@NamedQueries` on the entity (or its mapped superclass); the registered name is referenced with Panache's `#` prefix — for example `@NamedQuery(name = "Person.findByName", ...)` is invoked as `find("#Person.findByName", name)`, or use `count("#Person.countByStatus", Map.of("status", status))` for a counted query
 - Write operations (`persist`, `update`, `delete`, `flush`) require an active transaction — see
   [`transaction-conventions.md`](transaction-conventions.md)
 - Prefer `persistAndFlush()` over `persist()` when the generated identifier is needed immediately after the

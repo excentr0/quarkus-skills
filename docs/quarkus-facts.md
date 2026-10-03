@@ -1,9 +1,6 @@
 # Quarkus Facts — verified reference for skill writers
 
-All facts below were verified against official Quarkus documentation (quarkus.io guides,
-Quarkus 3.x LTS, 2025) before writing any skill. Skills MUST NOT contradict this file.
-If a skill needs a fact that is missing here — verify it via context7 (`/websites/quarkus_io_guides`)
-and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
+Facts in this file have mixed verification scopes; do not infer that every row applies to every Quarkus release. Version-sensitive provenance is recorded by section in §18, including the exact release/branch and check date. Skills MUST NOT contradict facts whose version scope matches the target project. When evidence is missing, inspect the project's actual dependencies and verify against official versioned documentation or source; there is no required documentation tool.
 
 ---
 
@@ -12,7 +9,7 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 | Action | Maven | Gradle |
 |---|---|---|
 | Dev mode | `./mvnw quarkus:dev` | `./gradlew quarkusDev` |
-| Build | `./mvnw quarkus:build` | `./gradlew quarkusBuild` |
+| Build (compile and package) | `./mvnw package` | `./gradlew build` |
 | Run tests | `./mvnw test` | `./gradlew test` |
 | Add extension | `./mvnw quarkus:add-extension -Dextensions="quarkus-rest-jackson"` | `./gradlew addExtension --extensions="quarkus-rest-jackson"` |
 | List extensions | `./mvnw quarkus:list-extensions` | `./gradlew listExtensions` |
@@ -44,8 +41,8 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 | `quarkus-security` | Core security annotations (`@RolesAllowed`, `SecurityIdentity`) |
 | `quarkus-smallrye-openapi` | OpenAPI schema + Swagger UI in dev |
 | `quarkus-jacoco` | JaCoCo coverage (test scope; replaces jacoco-maven-plugin) |
-| `io.quarkiverse.mapstruct:quarkus-mapstruct` | MapStruct support (Quarkiverse): reads `@Mapper`/`@MapperConfig`, makes generated mappers native-safe and dev-mode-recompilable. It does NOT run the MapStruct annotation processor — the build still needs `org.mapstruct:mapstruct-processor` via maven-compiler-plugin `annotationProcessorPaths` (or Gradle `annotationProcessor`). |
-| `quarkus-junit5` / `quarkus-junit-mockito` | `@QuarkusTest` / `@InjectMock` (`io.quarkus.test.InjectMock`) |
+| `io.quarkiverse.mapstruct:quarkus-mapstruct` | Optional native/dev-mode integration; verify extension compatibility with the target Quarkus release. Core MapStruct/CDI mapping does not require this extension, but does require `mapstruct` and `mapstruct-processor` via Maven `annotationProcessorPaths` or Gradle `annotationProcessor`. Extension 1.1.0 failed augmentation on the Quarkus 3.20.3/Java 21 fixture; core MapStruct 1.6.3 passed without it. Native/dev-mode behavior was not tested. |
+| `quarkus-junit5` / `quarkus-junit5-mockito` (Quarkus 3.20.3) | `@QuarkusTest` / `@InjectMock` (`io.quarkus.test.InjectMock`) |
 | `io.rest-assured:rest-assured` | HTTP tests (URL auto-configured in `@QuarkusTest`) |
 
 ## 3. Spring → Quarkus conversion (do not ship Spring code in Quarkus skills)
@@ -92,8 +89,8 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 - Reactive (Hibernate Reactive + Panache): same API but returns `Uni<...>`:
   `person.persist()`, `Person.findById(23L)` → `Uni<Person>`, `Person.listAll()` → `Uni<List<Person>>`.
   Transactions: `@WithTransaction` (`io.quarkus.hibernate.reactive.panache.common.WithTransaction`)
-  or `Panache.withTransaction(...)`. Plain `jakarta.transaction.Transactional` also works on
-  `Uni`-returning methods.
+  or `Panache.withTransaction(...)`. Do not use plain `jakarta.transaction.Transactional` with
+  Hibernate Reactive; for test-thread rollback use `@TestReactiveTransaction`.
 - Jackson: `com.fasterxml.jackson.databind.ObjectMapper` is a built-in CDI bean (quarkus-jackson,
   bundled by `quarkus-rest-jackson`) — inject it; customize via `ObjectMapperCustomizer` beans.
 - `equals`/`hashCode` for entities: proxy-safe pattern or id-based; lazy relations must not be touched
@@ -153,8 +150,13 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 - Properties: `mp.messaging.incoming.<channel>.connector=smallrye-kafka`, `.topic=...`,
   `.value.deserializer=...`; `mp.messaging.outgoing.<channel>.connector=smallrye-kafka`, `.topic=...`,
   `.value.serializer=...`. Built-in serializers: `io.quarkus.kafka.client.serialization.JsonbSerializer`,
-  ObjectMapper-based; Quarkus autodetects serializers/deserializers from `@Incoming`/`@Outgoing`/`@Channel`
-  declarations in many cases (built-in types, JsonObject, etc.).
+  ObjectMapper-based; serde autodetection requires a visible `@Incoming`/`@Outgoing`/`@Channel`
+  declaration, a supported payload type, and enabled `quarkus.messaging.kafka.serializer-autodetection.enabled`.
+  Config-only work without Java type evidence must not assume autodetection; `Void` is not in the supported
+  autodetection type list. Quarkus 3.20.3 `JsonbDeserializer<T>` has constructors accepting `Class<T>` or `Type`
+  (the `Type` overload also accepts a Jsonb instance); there is no no-argument constructor. A concrete
+  subtype for a simple payload passes its actual class to `super(MyPayload.class)`. Do not invent a generic
+  collection `Type` recipe without verifying the exact target API.
 - Kafka transactions with Hibernate: `KafkaTransactions<T>` from `@Channel` +
   `emitter.withTransaction(e -> { entity.persist(); e.send(entity); return Uni.createFrom().voidItem(); })`.
 - Dev Services starts Kafka automatically in dev/test when `quarkus-messaging-kafka` is present.
@@ -163,16 +165,19 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 
 - `@QuarkusTest` (quarkus-junit5): boots the app in the test JVM; CDI injection works; Dev Services start
   automatically; rest-assured base URL auto-configured.
-- `@QuarkusIntegrationTest`: runs the packaged artifact (`quarkus:build` output / native binary); NO CDI injection,
-  no `@InjectMock`, no config overrides — black-box HTTP tests only.
-- Mocking: `@InjectMock` (`io.quarkus.test.InjectMock`, requires `quarkus-junit-mockito`) field +
-  `Mockito.when(...)` in `@BeforeEach`; legacy package `io.quarkus.test.junit.mockito.InjectMock` is pre-3.x.
-- `@TestHTTPEndpoint(FruitResource.class)` on a `RestAssured` field targets the resource path.
-- Surefire (Maven) needs a modern version + system props:
-  `java.util.logging.manager=org.jboss.logmanager.LogManager`, `maven.home=${maven.home}`.
-- Test config: `%test.` profile in `application.properties`, or `@QuarkusTestProfile` implementations.
-- Data cleanup between tests: `@Transactional` on test methods (rollback semantics vary) — prefer explicit
-  cleanup in `@BeforeEach`/`@AfterEach` against the real Dev-Service database.
+- `@QuarkusIntegrationTest`: black-box test of the packaged artifact with production configuration; no CDI
+  or `@InjectMock`. `src/test/resources` application configuration is not used by the packaged test process;
+  configure the app's packaged `%prod`/launch profile instead.
+- Mocking: `@InjectMock` (`io.quarkus.test.InjectMock`) requires `quarkus-junit5-mockito` on Quarkus 3.20.3.
+- `@TestHTTPEndpoint(FruitResource.class)` is a class- or method-level annotation for REST Assured endpoint
+  targeting. Use `@TestHTTPResource` on a field to inject the corresponding URL.
+- `QuarkusTestProfile` is an interface implemented by a profile class, activated with `@TestProfile(MyProfile.class)`;
+  it is not an annotation named `@QuarkusTestProfile`.
+- In Quarkus 3.20.3, `@Transactional` test writes commit when the test transaction completes. `@TestTransaction`
+  rolls back work on the test thread only; independent HTTP-request transactions require explicit cleanup.
+  Reactive test rollback uses `@TestReactiveTransaction`.
+- Maven Surefire settings are project/version/build-specific; inspect the actual build rather than asserting a
+  universal required version or properties.
 
 ## 10. Coverage & mutation testing
 
@@ -189,17 +194,20 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
 
 ## 12. Native / container build (verified details)
 
-- JVM fast-jar: `./mvnw quarkus:build` → runnable app in `target/quarkus-app/` —
-  `java -jar target/quarkus-app/quarkus-run.jar`. Also `-Dquarkus.package.type=uber-jar` for a fat jar.
-- Native: `./mvnw package -Dnative` (or `-Dquarkus.native.enabled=true`) — requires GraalVM/Mandrel locally
-  OR a container build: `-Dquarkus.native.container-build=true` (builder image via
-  `-Dquarkus.native.builder-image=quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21`).
-  Gradle: `./gradlew build -Dquarkus.native.enabled=true`.
-  Output: `target/*-runner` (native executable). `quarkus build --native` via Quarkus CLI works too.
+- Quarkus 3.20.3 JVM fast-jar: Maven `./mvnw package` or Gradle `./gradlew build`; `package` runs the normal
+  compile/build lifecycle. A standalone Maven `quarkus:build` goal is not a substitute for compiling previously
+  uncompiled sources. Fast-jar runs from `target/quarkus-app/quarkus-run.jar` (Gradle output is under `build/`).
+- Quarkus 3.20.3 uber-jar setting is `quarkus.package.jar.type=uber-jar` (Maven property
+  `-Dquarkus.package.jar.type=uber-jar`). Do not recommend old `quarkus.package.type` without verifying the
+  specific older target release.
+- Native: use Maven `package -Dnative` only when the project defines the native profile; otherwise use
+  `package -Dquarkus.native.enabled=true`. Gradle uses `build -Dquarkus.native.enabled=true`. Add
+  `-Dquarkus.native.container-build=true` for a container builder (requires a working container runtime).
+  Output is the project's actual runner path; verify it after build.
 - Container images: add `quarkus-container-image-docker` / `-jib` / `-podman`; build with
   `./mvnw package -Dquarkus.container-image.build=true`; name/group/tag via `quarkus.container-image.*`
   (`quarkus.container-image.group=<registry/project>`, `.name=`, `.tag=`). Native + container can be
-  combined: `-Dquarkus.container-image.build=true -Dnative -Dquarkus.native.container-build=true`.
+  combined: `-Dquarkus.container-image.build=true -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true`.
 
 ## 13. Flyway / Liquibase migrations
 
@@ -341,3 +349,18 @@ and add it here, or mark it in the skill with `<!-- VERIFY: ... -->`.
   pushes Micrometer metrics via OTLP; bridge `io.quarkus:quarkus-micrometer-opentelemetry`
   (preview, since 3.19) routes Micrometer metrics through the OTel SDK (auto Micrometer binders off
   by default — enable with `quarkus.micrometer.binder.*`).
+
+
+## 18. Versioned provenance for corrected facts
+
+These entries record the release and date actually checked; they do not reclassify other sections as verified against 3.20.3. Existing version-specific OpenTelemetry details in §17 remain scoped to Quarkus 3.33 LTS and newer main as stated there.
+
+| Fact group | Scope checked | Official source | Checked |
+|---|---|---|---|
+| Maven lifecycle, uber-jar key, native profile behavior, Failsafe skip default | Quarkus 3.20.3 | [Maven tooling guide](https://github.com/quarkusio/quarkus/blob/3.20.3/docs/src/main/asciidoc/maven-tooling.adoc) | 2026-10-03 |
+| Hibernate Reactive transaction restrictions and reactive test rollback | Quarkus 3.20.3 | [Hibernate Reactive Panache guide](https://github.com/quarkusio/quarkus/blob/3.20.3/docs/src/main/asciidoc/hibernate-reactive-panache.adoc) | 2026-10-03 |
+| Integration testing, test transactions, mockito extension, profiles and HTTP test endpoint annotations | Quarkus 3.20.3 | [Getting Started Testing](https://github.com/quarkusio/quarkus/blob/3.20.3/docs/src/main/asciidoc/getting-started-testing.adoc) | 2026-10-03 |
+| Panache named-query registered-name syntax | Quarkus 3.20.3 | [Hibernate ORM with Panache](https://github.com/quarkusio/quarkus/blob/3.20.3/docs/src/main/asciidoc/hibernate-orm-panache.adoc) | 2026-10-03 |
+| Kafka serde autodetection and typed declarations | Quarkus 3.20.3 | [Kafka guide](https://github.com/quarkusio/quarkus/blob/3.20.3/docs/src/main/asciidoc/kafka.adoc) | 2026-10-03 |
+| Optional MapStruct extension compatibility | Quarkus 3.20.3 / MapStruct 1.6.3 / extension 1.1.0, Java 21 JVM fixture | Local `fixtures/template-rendered` execution; [extension parent POM](https://repo.maven.apache.org/maven2/io/quarkiverse/mapstruct/quarkus-mapstruct-parent/1.1.0/quarkus-mapstruct-parent-1.1.0.pom) targets Quarkus 3.31.0 | 2026-10-03 |
+| JSON-B Kafka deserializer constructors | Quarkus 3.20.3 | [JsonbDeserializer.java](https://raw.githubusercontent.com/quarkusio/quarkus/3.20.3/extensions/kafka-client/runtime/src/main/java/io/quarkus/kafka/client/serialization/JsonbDeserializer.java) | 2026-10-03 |

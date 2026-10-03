@@ -21,7 +21,7 @@ Skills дают агенту узкую, Quarkus-aware модель работы
 
 - префлайт по build-файлам: версия Quarkus, расширения, режим персистентности
 - проверенные API: Panache, `quarkus-rest`, `@ServerExceptionMapper`, OIDC, Reactive Messaging
-- скоринг соглашений по коду самого проекта перед генерацией
+- выбор соглашений по явным свидетельствам из кода самого проекта перед генерацией
 - код только из `examples/`-файлов с `${переменными}` — без выдуманных сниппетов
 
 ## Состав
@@ -31,9 +31,9 @@ Skills дают агенту узкую, Quarkus-aware модель работы
 | [`quarkus-explore`](skills/quarkus-explore/SKILL.md) | Исследование проекта: стек, расширения, сущности, репозитории, ресурсы, конфигурация. | Ready |
 | [`quarkus-planning`](skills/quarkus-planning/SKILL.md) | Структурированный план имплементации в `docs/plans/`. | Ready |
 | [`quarkus-data-panache`](skills/quarkus-data-panache/SKILL.md) | Сущности (Active Record) и репозитории Panache, PanacheQL, транзакции, reactive-вариант. | Ready |
-| [`quarkus-crud-rest-controller`](skills/quarkus-crud-rest-controller/SKILL.md) | JAX-RS ресурс с CRUD на Panache-репозитории, с DTO и пагинацией по выбору. | Ready |
+| [`quarkus-crud-rest-controller`](skills/quarkus-crud-rest-controller/SKILL.md) | Синхронные JAX-RS CRUD-ресурсы на Panache; DTO/маппинг, пагинация и поддерживаемые варианты scalar PATCH — по необходимости. | Ready |
 | [`quarkus-dto-creator`](skills/quarkus-dto-creator/SKILL.md) | DTO: Java record или обычный класс, с валидацией. | Ready |
-| [`quarkus-mapper-creator`](skills/quarkus-mapper-creator/SKILL.md) | Мапперы entity↔DTO: MapStruct (`quarkus-mapstruct`) или кастомный конвертер. | Ready |
+| [`quarkus-mapper-creator`](skills/quarkus-mapper-creator/SKILL.md) | Маппинг entity↔DTO через core MapStruct/annotation processor, совместимое optional-расширение Quarkiverse или кастомный конвертер. | Ready |
 | [`quarkus-security-configuration`](skills/quarkus-security-configuration/SKILL.md) | Аутентификация/авторизация: quarkus-oidc (bearer / code flow), path-политики, `@RolesAllowed`. | Ready |
 | [`quarkus-kafka-configuration`](skills/quarkus-kafka-configuration/SKILL.md) | Kafka: каналы, `@Incoming`/`@Outgoing`/`@Channel`, сериализаторы, Dev Services. | Ready |
 | [`quarkus-rabbitmq-configuration`](skills/quarkus-rabbitmq-configuration/SKILL.md) | RabbitMQ: каналы, очереди/exchange/роутинг-кеи, `@Incoming`/`@Outgoing`/`@Channel`, JSON-пейлоады, Dev Services. | Ready |
@@ -65,8 +65,13 @@ skills/<name>/
   определяются по build-файлам.
 - **Контекст, потом вопросы** — половина вопросов закрывается кодом проекта и историей диалога;
   спрашиваются только реальные развилки (через структурированный вопрос-инструмент харнесса).
-- **Код только из examples** — нет подходящего примера → агент останавливается и спрашивает,
-  а не выдумывает.
+- **Код только из examples** — генерируемые фрагменты берутся из включённых в skill `examples/`;
+  нет подходящего примера → агент останавливается и спрашивает, а не выдумывает.
+- **Ограниченная область генерации** — CRUD skill предназначен для синхронных Panache-ресурсов и
+  только для scalar PATCH-вариантов, явно поддержанных шаблонами; это не означает поддержку любой
+  формы сущности или reactive-варианта.
+- **Портативные пакеты** — каждый skill включает собственные `references/` и `examples/`; факты
+  уровня репозитория и соседние skills — опциональные handoff-ссылки с локальным fallback.
 - **Анти-галлюцинационный чеклист** — в конце каждого скилла; проверенные факты —
   в [`docs/quarkus-facts.md`](docs/quarkus-facts.md).
 
@@ -83,5 +88,32 @@ npx skills add excentr0/quarkus-skills -g
 
 ```bash
 python3 scripts/validate_skills.py
+python3 -m unittest discover -s scripts/tests -v
+python3 scripts/validate_skills.py --standalone
+python3 scripts/run_template_fixture.py
 git diff --check
 ```
+
+Проверка frontmatter намеренно поддерживает только используемое здесь подмножество — плоские
+строковые поля и folded/literal-блоки `description`, а не произвольный YAML; flow-значения, tags,
+aliases и неподдерживаемые quoted escapes отклоняются. `evals/execution-catalog.json` описывает
+автоматические команды и ручные сценарии, но не результаты запусков. Свидетельством запуска служат
+только его свежий вывод и XML-отчёты. Отрицательный seed проверяет отсутствие именно проверяемого
+primary skill; `allowed_companions` разрешает корректные чтения других skills, не разрешая primary.
+
+Для fixture нужны Java 21 и Maven; используется Quarkus 3.20.3 и H2. JVM-проверка в CI покрывает
+выбранные варианты с public-полями, DTO/MapStruct и setter-based сущностью. Native-image поведение
+и Gradle-сборка не проверяются. Опциональное Quarkiverse-расширение MapStruct нужно проверять на
+совместимость с целевой версией Quarkus; fixture использует core MapStruct/CDI, потому что
+проверенная версия расширения несовместима с Quarkus 3.20.3.
+
+Сравнение **снятых трасс чтения skill-файлов** с ожиданиями каталога:
+
+```bash
+python3 scripts/evaluate_routing_traces.py --traces "/path/to/captured-read-traces.json" --output /tmp/routing-evaluation.json
+```
+
+Evaluator не выбирает и не маршрутизирует skills — он только сравнивает переданные извне записи о
+прочитанных skill-файлах, handoff и stop-решениях с seed-каталогом. Без trace-файла результат
+`NOTRUN`; статически проверенные seeds не являются измерением качества маршрутизации. В unit-тестах
+используются синтетические traces, они не доказывают реальное поведение маршрутизации.

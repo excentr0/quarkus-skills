@@ -1,65 +1,56 @@
 # Result report format
 
-The report the runner returns to the main agent after running the tests (Maven or Gradle). It is the
-ONLY thing the runner returns: no build log, no console dump.
+Return one concise report with command, actual scope, exit status, and fresh test-result counts. Do not use old XML as proof of a new run.
+
+## Evidence collection
+
+Before running, note the start time and expected result directories (`target/surefire-reports`, `target/failsafe-reports`, or `build/test-results/<task>`); retain a listing/mtime fingerprint of only those directories. Afterward, count only result files demonstrably produced or updated by this invocation. Do not delete arbitrary build/results directories to force freshness. A build's `clean` task is appropriate only when part of the resolved command and its scope is understood.
+
+For Maven Surefire/Failsafe XML or Gradle JUnit XML, count suites and sum `tests`, `failures`, `errors`, and `skipped`. Executed count is `tests - skipped`; a file with zero executed tests cannot establish PASS. Errors and failures both count as failures. Report skipped counts alongside executed counts.
+
+## Status rules
+
+- **PASSED** only if the command exited successfully, relevant fresh results exist, at least one relevant test executed, and summed failures/errors are zero. State exact type/module/filter and whether other test phases also ran.
+- **FAILED** if command/build exit status is nonzero, tests fail/error, or an execution timeout/interruption occurs. If tests never started, explicitly say `tests NOT RUN` within the failed build report; an earlier passing phase does not make the overall command pass.
+- **NOT RUN** if command/task never executed, no fresh report exists, all selected tests were skipped, Gradle reported only `UP-TO-DATE` without fresh execution evidence, or results are stale/zero-execution. State the reason.
+- Classify relevant toolchain warnings from the command's exit/result evidence; do not silently ignore them or call a warning failure without evidence.
 
 ## Format
 
-**Passed:**
-
 ```text
-<scope>: PASSED (<total> tests)
+Command: <exact command>
+Scope: <type + module/filter; name every phase actually run>
+Status: PASSED | FAILED | NOT RUN
+Results: <executed> executed, <skipped> skipped; <failures> failures, <errors> errors
+Evidence: <fresh report paths and exit status; or concise blocker>
 ```
 
-**Failed:**
-
-```text
-<scope>: FAILED (<failed>/<total>)
-- <test>
-    <message>
-    <key stacktrace line(s), verbatim>
-```
-
-**Not run** (the suite never started — a green/red verdict would be a lie here):
-
-```text
-<scope>: NOT RUN — <cause: no wrapper / task not found / container runtime unavailable / build failed before tests>
-```
-
-## Rules
-
-- Report the failure `message` and the key `stacktrace` line(s) **verbatim** — enough for the main
-  agent to act on the real error, never a vague "some tests failed".
-- Give `file:line` from the stacktrace when the XML carries one: `expected: X but was: Y` alone says
-  what broke but not where.
-- Report the **scope that actually executed** (type + filter). `test: PASSED (3 tests)` after a filter
-  is not "the tests pass" — do not let a narrowed run read as a full-suite verdict.
-- Console noise is NOT a failure. Ignore Mockito self-attach warnings, JDK installation auto-detect
-  notes, and Dev Services startup logs. Judge only by JUnit results.
-- A run that timed out, or a task that never executed, is NOT passed.
-- Missing results directory with a green exit code (e.g. `--rerun-tasks` absent, Gradle reported
-  UP-TO-DATE) → report NOT RUN with that cause; do not report zero failures as a pass.
+For failures include the test name, message, and decisive stacktrace line verbatim, with `file:line` when present. Avoid dumping full logs.
 
 ## Examples
 
-Green:
-
 ```text
-quarkus: PASSED (25 tests)
+Command: ./mvnw clean verify -DskipITs=false
+Scope: Maven module order-service; Surefire + Failsafe
+Status: PASSED
+Results: 37 executed, 2 skipped; 0 failures, 0 errors
+Evidence: fresh target/surefire-reports and target/failsafe-reports; exit 0
 ```
 
-Red:
-
 ```text
-quarkus: FAILED (1/14)
-- org.acme.order.OrderServiceTest#createRejectsBlankName
-    expected: <400> but was: <500>
-    java.lang.AssertionError: expected: <400> but was: <500>
-        at org.acme.order.OrderServiceTest.createRejectsBlankName(OrderServiceTest.java:88)
+Command: ./gradlew :order-service:quarkusIntTest
+Scope: Gradle integration task only
+Status: FAILED
+Results: 4 executed, 0 skipped; 1 failure, 0 errors
+Evidence: fresh build/test-results/quarkusIntTest; exit 1
+- OrderIT#createRejectsInvalidOrder: expected <400> but was <500>
+  java.lang.AssertionError: expected <400> but was <500> (OrderIT.java:88)
 ```
 
-Not run:
-
 ```text
-integration: NOT RUN — quarkusIntTest task not found in this build (no integration-test source set)
+Command: ./gradlew quarkusIntTest
+Scope: Gradle integration tests
+Status: NOT RUN
+Results: no fresh test results
+Evidence: task was UP-TO-DATE and no XML was executed or refreshed
 ```

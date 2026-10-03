@@ -1,0 +1,86 @@
+[
+  {
+    "id": "fixture-rendered-maven-java21",
+    "assertions": [
+      "fresh Surefire and Failsafe reports exist",
+      "tests executed with no failures, errors, or skips",
+      "rendered public, DTO/MapStruct, and setter PATCH paths"
+    ],
+    "kind": "automated",
+    "command": "python3 scripts/run_template_fixture.py"
+  },
+  {
+    "id": "static-validator-and-negative-tests",
+    "assertions": [
+      "19 skills and mirrored references validate",
+      "EN/RU seed coverage is structurally complete",
+      "negative cases reject invalid checklist, resource, blocklist, report, and seed inputs"
+    ],
+    "kind": "automated",
+    "command": "python3 scripts/validate_skills.py && python3 -m unittest discover -s scripts/tests -v"
+  },
+  {
+    "id": "standalone-package-smoke",
+    "assertions": [
+      "each of 19 skill directories copied and checked alone",
+      "own references/examples exist in isolated copies",
+      "portable external fallback policy is present"
+    ],
+    "kind": "automated",
+    "command": "python3 scripts/validate_skills.py --standalone"
+  },
+  {
+    "id": "captured-read-trace-evaluator-unit",
+    "assertions": [
+      "synthetic in-memory trace fixtures exercise success, failure, and not-run outcomes only",
+      "no synthetic trace is stored as real measured routing evidence"
+    ],
+    "kind": "automated",
+    "command": "python3 -m unittest discover -s scripts/tests -p test_evaluate_routing_traces.py -v"
+  },
+  {
+    "id": "quarkus-parent-bom-and-yaml-detection",
+    "assertions": [
+      "inherited parent BOM/module selection checked from source",
+      "YAML config claims only when YAML extension is present"
+    ],
+    "kind": "manual",
+    "scenario": "Inspect a target project for inherited parent BOM/module selection and YAML config requirements; verify whether the YAML extension is present."
+  },
+  {
+    "id": "imported-fqn-project-discovery",
+    "assertions": [
+      "imported and fully qualified entity annotations discovered",
+      "source files read before reporting entity/repository behavior"
+    ],
+    "kind": "manual",
+    "scenario": "Use a target project with imported and fully qualified entity annotations; inspect sources before reporting discovered entities and repositories."
+  },
+  {
+    "id": "true-red-failure-diagnosis",
+    "assertions": [
+      "true production test failure distinguished from infrastructure/build failure",
+      "fresh XML execution and failure counts used"
+    ],
+    "kind": "manual",
+    "scenario": "Use a deliberately failing production test run and distinguish test failures from infrastructure/build failures using fresh XML counts."
+  },
+  {
+    "id": "reactive-stack-stop-boundary",
+    "assertions": [
+      "reactive persistence is distinguished from synchronous Panache",
+      "unsupported generated variant stops instead of guessing"
+    ],
+    "kind": "manual",
+    "scenario": "Use a reactive persistence project to evaluate the synchronous Panache generation stop boundary."
+  },
+  {
+    "id": "native-and-gradle-platform-matrix",
+    "assertions": [
+      "native-image extension/runtime behavior is not inferred from JVM fixture",
+      "Gradle compilation is not claimed"
+    ],
+    "kind": "manual",
+    "scenario": "Evaluate native-image extension/runtime and Gradle build behavior with their required toolchains; do not infer them from the JVM fixture."
+  }
+]

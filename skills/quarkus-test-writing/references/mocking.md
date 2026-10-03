@@ -2,8 +2,7 @@
 
 ## In @QuarkusTest — @InjectMock
 
-Requires the `quarkus-junit-mockito` test dependency (artifact renamed from
-`quarkus-junit5-mockito` in Quarkus 3.31).
+For Quarkus 3.20.3, requires the `quarkus-junit5-mockito` test dependency. Verify the artifact against the target Quarkus version; do not assume this name/rename timeline applies to every release.
 
 - `@InjectMock ${DependencyName} ${dependencyVar};` as a test-class field, imported from
   `io.quarkus.test.InjectMock` (the pre-3.x package `io.quarkus.test.junit.mockito.InjectMock`

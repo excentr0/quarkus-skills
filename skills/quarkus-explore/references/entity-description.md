@@ -1,42 +1,33 @@
-# Describe a Panache Entity
+# Describe a JPA / Panache Entity
 
-How to read an entity file and produce a summary line for the exploration report.
+How to read an entity file and produce a source-backed summary.
 
-## Step 1 — Locate entities
+## Locate and confirm entities
 
-Entities live in packages like `.domain`, `.entity`, `.model`. Find them:
+Entities may live in packages such as `.domain`, `.entity`, or `.model`. Search Java sources for both `@Entity` and `@jakarta.persistence.Entity`, then inspect imports and read matches to confirm the annotation. Also find classes extending `PanacheEntity` or `PanacheEntityBase` to identify inherited Panache APIs and IDs, but do not classify a subclass as a JPA entity from that inheritance alone: confirm its own `@Entity`/`@jakarta.persistence.Entity` annotation. Do not conclude that an entity is absent from an FQN-only grep.
 
-- grep for `jakarta.persistence.Entity` across `src/main/java`.
-- An entity either extends `io.quarkus.hibernate.orm.panache.PanacheEntity` (implicit `Long id`),
-  `PanacheEntityBase` (declare your own `@Id`), or is a plain JPA entity.
+## Extract from each source
 
-## Step 2 — Extract from each file
+1. **Class and persistence style** — `PanacheEntity`, `PanacheEntityBase`, or plain JPA entity; distinguish synchronous and reactive Panache from build dependencies.
+2. **ID strategy** — actual `@Id` / `@GeneratedValue` mapping; `PanacheEntity` supplies an implicit `Long id`.
+3. **Fields** — declared fields/accessors, types, and source-visible constraints (for example `@Column(nullable = false)`, `@NotNull`).
+4. **Relations** — annotations and mapped sides, such as `@ManyToOne`, `@OneToMany(mappedBy = ...)`, and `@ManyToMany`.
+5. **Active Record methods** — static finders declared on the entity.
+6. **Query style** — distinguish PanacheQL fragments (for example `"name = ?1"` or `"ORDER BY name"`), named/named-native queries, and other query forms. The registered JPA named-query name is commonly `"Person.findByName"`; Panache invokes it as `find("#Person.findByName", name)`.
+7. **equals/hashCode/toString** — report only relevant source-backed behavior; avoid traversing lazy relations in descriptions.
 
-1. **Class & base** — `extends PanacheEntity` / `PanacheEntityBase` / plain `@Entity`.
-2. **ID strategy** — `@GeneratedValue` strategy (IDENTITY / SEQUENCE / UUID / none).
-3. **Fields** — Panache convention is `public` fields; note type and constraints
-   (`@Column(nullable = false)`, `@NotNull`).
-4. **Relations** — `@ManyToOne(fetch = LAZY/EAGER)`, `@OneToMany(mappedBy = ...)`, `@ManyToMany`.
-5. **Active Record methods** — static finders on the entity (`findByName`, `findAlive`) mean the
-   Active Record pattern is used, not only repositories.
-6. **Query style** — PanacheQL fragments (`"name = ?1"`, `"ORDER BY name"`) vs named queries
-   (`find("Person.findByName", name)`) vs native.
-7. **equals/hashCode/toString** — proxy-safe or id-based? `toString` must not touch lazy relations.
+## Report
 
-## Step 3 — Emit the summary line
+Keep the description compact and evidence-backed, for example:
 
 ```text
-Order (id: Long SEQUENCE, status: OrderStatus, totalAmount: BigDecimal) → has many OrderItem (LAZY) → references Product
+Order.java: Order (id: Long, status: OrderStatus, totalAmount: BigDecimal) → has many OrderItem (LAZY) → references Product
 ```
 
-## Reactive variant
-
-If the project uses `quarkus-hibernate-reactive-panache`, the same classes return `Uni<...>` —
-note it in the report: `Person.findById(23L)` → `Uni<Person>`. Persistence is driven by
-`Uni` chains, and resource methods return `Uni<Response>` instead of blocking types.
+For reactive Panache, mention the reactive return shape only when visible in the actual source; do not infer APIs from the extension name alone. Plain `@Entity` without Panache is still a valid JPA entity to describe, but has no implied Panache repository/query behavior.
 
 ## Common traps
 
-- `PanacheEntity` gives `public Long id` — no need to re-declare it; check for accidental duplicate `id` fields.
-- Plain `@Entity` classes in a Panache project are usually intentional (no Panache features needed) — describe as-is.
-- Field annotations on fields (not getters) are the Panache/JPA convention — report deviations.
+- `PanacheEntity` provides `public Long id`; do not claim it is declared in the entity source or add a second id.
+- Plain JPA entities in a Panache project may intentionally use ordinary JPA; describe the actual class rather than reclassifying it.
+- Check whether mapping annotations are on fields or accessors before describing the project convention.

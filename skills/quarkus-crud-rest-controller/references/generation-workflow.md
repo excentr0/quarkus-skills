@@ -2,7 +2,6 @@
 
 ## Step 5 -- Generate code
 
-Tell the user: `Step 5/6: Generating code...`
 
 WA work units, in order. Load each example file right before writing its code.
 
@@ -36,8 +35,7 @@ Use the available file-writing tool to create `src/main/java/{package-path}/{res
 Read `examples/_beans/injection/java.md`.
 
 Add a constructor parameter for the repository. If DTO with mapper: also inject the mapper bean.
-If PATCH or PATCH_MANY is selected: also inject the Jackson `ObjectMapper` bean
-(`${ObjectMapperFqn}` resolved in Step 1).
+If PATCH or PATCH_MANY is selected: inject `jakarta.validation.Validator`; add `quarkus-hibernate-validator` if missing and report it. DTO PATCH additionally uses the Jackson `ObjectMapper` for the checked snapshot merge; no-DTO PATCH does not need it. Read `examples/_methods/patch/java.md` for the one-time shared helper set. Insert those helpers once before endpoint methods, then add the selected PATCH/PATCH_MANY method(s). For either PATCH mode, assemble `${mutableFieldNames}`, `${primitiveFieldNames}`, and `${patchTypeChecks}` from concrete source-verified API field types using `examples/_fragments/patch-field/java.md`. `${patchTypeChecks}` runs in `assertPatchAllowed` before mutation. Assemble `${patchAssignments}` from matching field write fences only in no-DTO mode; add `applyPatch(Entity, JsonNode)` only in no-DTO mode. For DTO mode, add `mergePatchDto` from the PATCH example (shallow snapshot merge of validated present keys) and use the safe CRUD mapper variant. Do not generate unused assignment helpers or use generic entity deserialization.
 
 Use the available file-editing tool to modify the resource class.
 
@@ -54,11 +52,13 @@ For each method in `selectedMethods` (from Step 4 method selection):
    - For GET_LIST: pagination (yes/no), filter (with/without), sort (with/without), total count (with/without)
    - For CREATE: with/without `@Valid`
    - For DELETE: default (returns the deleted entity/DTO) vs strict (204 No Content, 404 when missing)
-   - For PATCH / PATCH_MANY: DTO vs no DTO (the patch strategy is Jackson `ObjectMapper` in both)
+   - For PATCH / PATCH_MANY: DTO vs no DTO; both use the shared allowlist/validation helpers (PATCH itself does not deserialize arbitrary entity JSON).
 
 4. Apply variable substitutions (ONLY variables declared in the Variables section)
 
-5. **FQN handling (CRITICAL):** examples contain FQNs (e.g. `jakarta.ws.rs.GET`,
+5. **PATCH prerequisites:** before generating PATCH methods, confirm a source-backed scalar allowlist, supported per-field conversion fragments, validator injection and dependency, and (in DTO mode) safe mapper method. If any is unknown or unsupported, stop instead of improvising.
+
+6. **FQN handling (CRITICAL):** examples contain FQNs (e.g. `jakarta.ws.rs.GET`,
    `io.quarkus.panache.common.Page`, entity/DTO/repository FQNs). When writing the final file, you MUST:
    1. Replace every FQN in the body with its **short name**
    2. Collect every FQN you shortened and emit a corresponding `import` line right after the

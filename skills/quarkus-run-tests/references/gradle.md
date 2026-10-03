@@ -15,7 +15,7 @@ Conventional mapping for a Quarkus project:
 | `unit` + `quarkus` (`@QuarkusTest`) | `test` |
 | `integration` (`@QuarkusIntegrationTest`) | `quarkusIntTest` — exists only when the project declares an integration-test source set (`src/integrationTest/java`) |
 
-If a requested type has no matching task, say so — do not guess one.
+If a requested type has no matching task, say so — do not guess one. For combined test runs, inspect the task graph with `./gradlew <tasks> --dry-run` and the configured source sets/dependencies; select one invocation that avoids running the same test task twice.
 
 ## 2. Narrow the run
 
@@ -49,12 +49,7 @@ grep -n "integrationTest\|quarkusIntTest\|sourceSets" build.gradle build.gradle.
 
 Parse per `references/report.md`.
 
-A full picture of everything that ran (all test tasks):
-
-```bash
-./gradlew test                    # first, when the project has both
-./gradlew quarkusIntTest           # only after test passes
-```
+When both test sets are requested, prefer one invocation such as `./gradlew clean test quarkusIntTest` only after `--dry-run` confirms the project task graph/source sets and avoids duplicate test execution. Otherwise resolve a non-duplicating task graph or report the material limitation. Treat `UP-TO-DATE` without fresh result evidence as NOT RUN, not as a fresh pass.
 
 ## 5. Remember the mapping
 
